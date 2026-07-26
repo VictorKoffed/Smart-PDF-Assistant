@@ -12,10 +12,17 @@
 import io
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
-from main import app, assistant
+from main import app, get_assistant
 
 # Skapar en testklient som simulerar HTTP-anrop direkt mot applikationen
 client = TestClient(app)
+
+# =====================================================================
+# TEST-SESSION
+# Eftersom systemet kräver unika sessioner, definierar vi ett
+# statiskt session-id som vi använder genomgående i alla tester.
+# =====================================================================
+TEST_SESSION_ID = "test-session-12345"
 
 
 # ==========================================
@@ -28,7 +35,11 @@ def test_upload_invalid_file_type():
     försöker ladda upp en fil som inte är en PDF.
     """
     file_content = "detta är en textfil".encode("utf-8")
-    response = client.post("/upload", files={"file": ("test.txt", file_content, "text/plain")})
+    response = client.post(
+        "/upload",
+        files={"file": ("test.txt", file_content, "text/plain")},
+        headers={"X-Session-ID": TEST_SESSION_ID}  # <- Måste nu skickas med!
+    )
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Endast PDF-filer tillåts."
@@ -39,12 +50,16 @@ def test_upload_valid_pdf_success():
     Testar att en giltig PDF-uppladdning går igenom hela flödet med status 200 OK.
     Mockar bort tunga processer (som filskrivning och RAG-bearbetning) för snabba tester.
     """
-    with patch.object(assistant, "process_pdf"), patch.object(assistant, "clear_memory"):
+    # Hämtar assistenten för just vår test-session
+    test_assistant = get_assistant(TEST_SESSION_ID)
+
+    with patch.object(test_assistant, "process_pdf"), patch.object(test_assistant, "clear_memory"):
         # Skapar en enkel binär sträng som simulerar en PDF-fil i minnet
         pdf_bytes = "%PDF-1.4 fejkad pdf-innehall...".encode("utf-8")
         response = client.post(
             "/upload",
-            files={"file": ("test.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
+            files={"file": ("test.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
+            headers={"X-Session-ID": TEST_SESSION_ID}
         )
 
         assert response.status_code == 200
@@ -56,13 +71,19 @@ def test_ask_without_uploaded_document():
     Testar att /ask endpointen stoppar förfrågningar (returnerar felkod)
     om ingen vektordatabas/dokument finns tillgängligt än.
     """
+    test_assistant = get_assistant(TEST_SESSION_ID)
+
     # Nollställ vectorstore för att simulera att inget dokument är uppladdat
-    assistant.vectorstore = None
+    test_assistant.vectorstore = None
 
-    response = client.post("/ask", json={"question": "Vad handlar dokumentet om?"})
+    response = client.post(
+        "/ask",
+        json={"question": "Vad handlar dokumentet om?"},
+        headers={"X-Session-ID": TEST_SESSION_ID}
+    )
 
-    # Verifierar att systemet sätter stopp med 400 Bad Request eller 500
-    assert response.status_code in [400, 500]
+    # Verifierar att systemet sätter stopp med 400 Bad Request
+    assert response.status_code == 400
 
 
 def test_ask_with_uploaded_document():
@@ -70,11 +91,17 @@ def test_ask_with_uploaded_document():
     Testar att /ask endpointen returnerar rätt svarsstruktur
     när ett dokument faktiskt har laddats upp och behandlats.
     """
-    # Sätt en mockad vectorstore så spärren passeras
-    assistant.vectorstore = MagicMock()
+    test_assistant = get_assistant(TEST_SESSION_ID)
 
-    with patch.object(assistant, "query_rag", return_value={"answer": "Testar svar", "sources": []}):
-        response = client.post("/ask", json={"question": "Vad handlar dokumentet om?"})
+    # Sätt en mockad vectorstore så spärren passeras
+    test_assistant.vectorstore = MagicMock()
+
+    with patch.object(test_assistant, "query_rag", return_value={"answer": "Testar svar", "sources": []}):
+        response = client.post(
+            "/ask",
+            json={"question": "Vad handlar dokumentet om?"},
+            headers={"X-Session-ID": TEST_SESSION_ID}
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -89,12 +116,15 @@ def test_ask_with_uploaded_document():
 def test_assistant_initialization():
     """
     Validerar att assistenten laddar in rätt grundläggande konfigurationsvärden.
-    ANPASSNING: Om du byter primär AI-modell i 'main.py', uppdatera
-    förväntat värde här ("gemma4:e4b") så att det matchar.
     """
-    assert assistant.model_name == "gemma4:e4b"  # <-- ANPASSNING: Ändra om du byter modell
-    assert assistant.upload_dir == "uploads"
-    assert isinstance(assistant.chat_history, list)
+    test_assistant = get_assistant(TEST_SESSION_ID)
+
+    # ANPASSNING: Om du byter modell i .env, måste detta eventuellt uppdateras
+    assert test_assistant.model_name == "gemma4:e4b"
+
+    # Uppladdningsmappen ska nu innehålla sessions-id:t
+    assert test_assistant.upload_dir == f"uploads/{TEST_SESSION_ID}"
+    assert isinstance(test_assistant.chat_history, list)
 
 
 def test_clear_memory():
@@ -102,38 +132,44 @@ def test_clear_memory():
     Testar att konversationsminnet (chat_history) töms korrekt
     när clear_memory-metoden anropas.
     """
-    assistant.chat_history.clear()  # Töm listan först för att undvika att tidigare tester spökar
-    assistant.chat_history.append(("Fråga", "Svar"))
-    assert len(assistant.chat_history) == 1
+    test_assistant = get_assistant(TEST_SESSION_ID)
 
-    assistant.clear_memory()
-    assert len(assistant.chat_history) == 0
+    test_assistant.chat_history.clear()  # Töm listan först
+    test_assistant.chat_history.append(("Fråga", "Svar"))
+    assert len(test_assistant.chat_history) == 1
+
+    test_assistant.clear_memory()
+    assert len(test_assistant.chat_history) == 0
 
 
 # ==========================================
 # 3. MOCKADE TESTER AV RAG-LOGIKEN
 # ==========================================
 
-@patch("services.Chroma")
-def test_query_rag_mocked(mock_chroma_class):
+def test_query_rag_mocked():
     """
     Testar query_rag-metoden isolerat utan att kräva en aktiv anslutning
     till en lokal Ollama-server eller en riktig hårddiskdatabas.
     """
+    test_assistant = get_assistant(TEST_SESSION_ID)
+
+    # Eftersom vi optimerat Chroma (vi återanvänder self.vectorstore),
+    # mockar vi similarity_search direkt på vektordatabasen.
+    test_assistant.vectorstore = MagicMock()
+
     # Skapa ett fiktivt dokument som databasen låtsas hitta
     mock_doc = MagicMock()
     mock_doc.page_content = "Victor Koffed studerar systemutveckling."
     mock_doc.metadata = {"page": 0}
 
     # Koppla dokumentet till sökfunktionen
-    mock_vectorstore = mock_chroma_class.return_value
-    mock_vectorstore.similarity_search.return_value = [mock_doc]
+    test_assistant.vectorstore.similarity_search.return_value = [mock_doc]
 
     # Mocka Ollama-klientens svarsgenerering
-    assistant.ollama_client = MagicMock()
-    assistant.ollama_client.generate.return_value = {"response": "Victor studerar systemutveckling."}
+    test_assistant.ollama_client = MagicMock()
+    test_assistant.ollama_client.generate.return_value = {"response": "Victor studerar systemutveckling."}
 
-    result = assistant.query_rag("Vem är Victor?")
+    result = test_assistant.query_rag("Vem är Victor?")
 
     assert result["answer"] == "Victor studerar systemutveckling."
     assert len(result["sources"]) == 1
