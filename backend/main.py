@@ -10,6 +10,8 @@
 # =====================================================================
 
 import os
+import uuid
+import shutil
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -92,6 +94,11 @@ class QueryRequest(BaseModel):
 # ---------------------------------------------------------------------
 # Tar emot en fil från frontend, validerar formatet, identifierar
 # användarens session, sparar filen lokalt och startar RAG-processen.
+#
+# SÄKERHET OCH OPTIMERING:
+# - Filnamnet byts ut mot ett UUID för att förhindra Path Traversal och filkrockar.
+# - Använder shutil.copyfileobj för att spara filen effektivt utan att
+#   överbelasta serverns RAM-minne.
 # =====================================================================
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(None)):
@@ -109,13 +116,18 @@ async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(No
         # Säkerställ att den sessionsspecifika mappen existerar innan vi sparar
         os.makedirs(assistant.upload_dir, exist_ok=True)
 
-        file_path = os.path.join(assistant.upload_dir, file.filename)
+        # Generera ett säkert, unikt filnamn (t.ex. 550e8400-e29b-41d4-a716-446655440000.pdf)
+        safe_filename = f"{uuid.uuid4()}.pdf"
+        file_path = os.path.join(assistant.upload_dir, safe_filename)
+
+        # Spara filen till disk med hjälp av shutil (optimerat och säkert)
         with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
+            shutil.copyfileobj(file.file, buffer)
 
         # Skicka filen vidare för uppdelning och indexering i vektordatabasen
         assistant.process_pdf(file_path)
+
+        # Returnera originalnamnet i meddelandet så frontend kan visa det snyggt
         return {"message": f"Filen {file.filename} har bearbetats för sessionen!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

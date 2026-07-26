@@ -110,15 +110,13 @@ class PDFDocumentAssistant:
         - Skicka till Ollama-modellen och returnera svar + källor.
         """
         try:
-            # Koppla upp mot den befintliga vektordatabasen
-            vectorstore = Chroma(
-                client=self.chroma_client,
-                embedding_function=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
-            )
+            # OPTIMERING: Återanvänd den redan inlästa vektordatabasen (self.vectorstore)
+            # istället för att läsa in Chroma från disk vid varje enskild fråga.
+            if not self.vectorstore:
+                raise ValueError("Ingen databas aktiv. Vänligen ladda upp ett dokument först.")
 
             # Hämta de k mest relevanta textbitarna (chunks) från dokumentet
-            # ANPASSNING: Ändra k=3 till t.ex. k=2 om modellens svarstider behöver snabbas upp.
-            docs = vectorstore.similarity_search(question, k=3)
+            docs = self.vectorstore.similarity_search(question, k=3)
 
             context = ""
             sources = set()
@@ -136,25 +134,28 @@ class PDFDocumentAssistant:
                 for q, a in self.chat_history[-3:]:
                     history_text += f"Användare: {q}\nAI: {a}\n\n"
 
-            # Skapa den slutgiltiga prompten med strikta regler för AI-beteende
-            prompt = f"""Du är "Smart PDF-Assistent", en professionell AI utvecklad för att svara på frågor om uppladdade dokument. 
+            # Skapa den slutgiltiga prompten med strikta regler för AI-beteende på engelska
+            # för att maximera modellens instruktionsföljsamhet, men tvinga svaret till svenska.
+            # Notera: Indenteringen här är viktig i Python.
+            prompt = f"""You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
 
-VIKTIGA REGLER:
-0. ABSOLUT FÖRBUD MOT TÄNKANDE: Börja direkt på svaret. Skriv ALDRIG inledningar som "Uppmärksamhet!", "Jag ser till...", "För att svara på din fråga..." eller liknande. Svara rakt på sak.
-1. Din identitet: Om användaren frågar vem DU är, svara vänligt att du är Smart PDF-Assistent.
-2. Dina funktioner: Om användaren frågar vad du kan göra, berätta att du kan analysera PDF-dokument, svara på frågor och komma ihåg kontexten.
-3. Vem dokumentet tillhör: Om användaren frågar vems dokumentet är eller vem som omnämns i texten, leta i dokumentet nedan och svara på det.
-4. Användaren bakom skärmen: Om användaren frågar vem hen själv är, svara att du inte vet vem som sitter vid tangentbordet.
-5. Dokumentets identitet: Du är INTE personen i dokumentet. Prata alltid om personen i texten i tredje person.
-6. Fakta: Basera dina svar om dokumentets innehåll ENDAST på texten nedan. Gissa aldrig.
-7. Subjektiva frågor: Om användaren frågar vad som är "bäst" eller "mest imponerande", peka sakligt på vad som finns i dokumentet.
+CRITICAL RULES:
+0. Language: You must ALWAYS respond in Swedish, regardless of the prompt language.
+1. Direct Output: Output the response directly without conversational fillers, preambles, or meta-commentary.
+2. Your Identity: If asked who you are, politely state that you are "Smart PDF-Assistent".
+3. Your Capabilities: If asked what you can do, state that you analyze PDF documents, answer questions, and remember context.
+4. Document Ownership: If asked whose document it is or who is mentioned, find the answer in the provided text.
+5. The User: If asked who the user is, state that you do not know who is at the keyboard.
+6. Document Identity: You are NOT the person in the document. Always refer to the person in the text in the third person.
+7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
+8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
 
 {history_text}
-Här är relevant text från dokumentet:
+Here is the relevant text from the document:
 {context}
 
-Ny fråga: {question}
-Svar:"""
+New question: {question}
+Answer in Swedish:"""
 
             # Anropa Ollama för att generera svaret
             response = self.ollama_client.generate(
