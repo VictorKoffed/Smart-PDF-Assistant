@@ -87,7 +87,22 @@ Följ dessa steg för att köra projektet lokalt på din maskin.
 
 ---
 
-## 💻 Hårdvara & Prestanda
-Detta projekt är optimerat för att kunna köras smidigt på konsumenthårdvara. Under utvecklingen har systemet körts lokalt på en laptop med ett **Nvidia RTX 4060M (8GB VRAM)**.
+---
+
+## 💻 Utvecklingsmiljö & Arkitektur
+Systemet är designat för att vara flexibelt och kan köras på en och samma maskin, men är utvecklat med en **distribuerad arkitektur** där AI-motorn är separerad från backend och frontend.
+
+**AI- & Inferensserver (Ollama i Docker):**
+* **OS:** Ubuntu Server
+* **Hårdvara:** Nvidia RTX 4060M (8GB VRAM), AMD Ryzen 7 8840HS, 32GB DDR5 5600MHz (CL40)
+* **Roll:** Hanterar uteslutande RAG-embeddings och LLM-generering, vilket håller huvudapplikationen lättviktig.
+
+**Utvecklingsmaskin (FastAPI & React):**
+* **OS:** CachyOS (Linux)
+* **Hårdvara:** AMD Radeon RX 9070 XT, AMD Ryzen 9 5900X, 32GB DDR4 3600MHz (CL14)
+* **Verktyg:** PyCharm (Backend) & WebStorm (Frontend)
+* **Roll:** Utveckling, klienthantering och API-routing.
+
+Denna uppdelning demonstrerar hur applikationen smidigt kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör effektiv skalning.
 
 ---
