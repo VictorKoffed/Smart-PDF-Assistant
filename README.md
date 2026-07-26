@@ -5,11 +5,11 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 ---
 
 ## 🚀 Funktioner
-* **Lokal & Säker:** All AI-bearbetning sker lokalt via Ollama utan att data skickas till externa molntjänster.
+* **Lokal & Säker:** All AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
 * **Smart RAG-flöde:** Delar upp PDF-dokument i hanterbara textbitar (chunks), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
 * **Multi-user & Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare. Ingen användare riskerar att läsa en annans filer eller chatthistorik.
 * **Säker Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
-* **Interaktiv Chatt:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd och automatisk scroll.
+* **Interaktiv Chatt & Polerad UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka mikrointeraktioner (såsom skräddarsydda "pop"-animationer och ljusgradienter när AI:n har färdigställt sitt svar).
 * **Källhänvisningar:** Visar exakt vilka sidor och textstycken (chunks) som AI använt för att generera sitt svar, med möjlighet att expandera och läsa hela stycket.
 
 ---
