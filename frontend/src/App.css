@@ -97,6 +97,30 @@
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.upload-title {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.upload-desc {
+  color: #9aa0a6;
+  margin-bottom: 30px;
+  font-size: 0.95rem;
+}
+
+.upload-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
 .upload-label {
   border: 2px dashed var(--border);
   padding: 24px;
@@ -111,6 +135,22 @@
 
 .upload-label:hover {
   border-color: var(--accent);
+}
+
+.upload-file-name {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.upload-file-hint {
+  font-size: 0.85rem;
+  color: #9aa0a6;
+}
+
+.hidden-file-input {
+  display: none;
 }
 
 .upload-btn {
@@ -135,8 +175,38 @@
   cursor: not-allowed;
 }
 
+.upload-status-msg {
+  margin-top: 20px;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+/* Laddnings-state */
+.uploading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.spinner-container {
+  transform: scale(2);
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.uploading-title {
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.uploading-desc {
+  color: #9aa0a6;
+  margin: 0;
+}
+
 /* =====================================================================
-   CHATTGRÄNSSNITT
+   CHATTGRÄNSSNITT & MEDDELANDEN
 ===================================================================== */
 .chat-container {
   flex: 1;
@@ -185,6 +255,34 @@
   margin-bottom: 4px;
   color: var(--accent);
   font-weight: bold;
+}
+
+.msg-details {
+  cursor: pointer;
+}
+
+.msg-summary {
+  outline: none;
+  user-select: none;
+  font-weight: 500;
+}
+
+.msg-expand-hint {
+  font-size: 0.75rem;
+  color: var(--accent);
+  display: block;
+  margin-top: 4px;
+}
+
+.msg-expanded-text {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 8px;
+}
+
+.msg-temp {
+  opacity: 0.8;
 }
 
 /* =====================================================================
@@ -240,6 +338,21 @@
   font-size: 0.85rem;
 }
 
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.footer-hint {
+  color: #9aa0a6;
+}
+
+.footer-file-input {
+  color: #9aa0a6;
+  width: 200px;
+}
+
 .change-doc-btn {
   padding: 8px 16px;
   background-color: var(--accent);
@@ -251,8 +364,52 @@
 }
 
 /* =====================================================================
-   KÄLLKORT
+   KÄLLKORT & KÄLLHÄNVISNINGAR
 ===================================================================== */
+.sources-container {
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sources-details {
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #9aa0a6;
+}
+
+.sources-summary {
+  outline: none;
+  user-select: none;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.sources-summary::-webkit-details-marker {
+  display: none; /* Döljer webbläsarens standardpil */
+}
+
+/* Här slipper vi använda onMouseOver i JavaScript! */
+.sources-summary:hover {
+  color: var(--accent);
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  text-align: left;
+  cursor: default;
+}
+
 .source-card {
   background-color: #161719;
   padding: 10px 14px;
@@ -264,6 +421,12 @@
   line-height: 1.4;
 }
 
+.source-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
 .source-tag {
   background-color: var(--accent);
   color: var(--bg);
@@ -272,6 +435,20 @@
   font-size: 0.65rem;
   font-weight: bold;
   letter-spacing: 0.5px;
+}
+
+.source-content {
+  user-select: none;
+}
+
+.source-content.expandable {
+  cursor: pointer;
+}
+
+.source-text {
+  opacity: 0.85;
+  font-style: italic;
+  display: block;
 }
 
 .source-expand-btn {

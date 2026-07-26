@@ -9,7 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
-import './App.css' // <-- Importera vår nya CSS-fil!
+import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
@@ -22,7 +22,7 @@ function SourceCard({ src }) {
 
     return (
         <div className="source-card">
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+            <div className="source-header">
                 <span className="source-tag">
                     {src.page.toUpperCase()}
                 </span>
@@ -30,10 +30,10 @@ function SourceCard({ src }) {
 
             <div
                 onClick={() => isLong && setIsExpanded(!isExpanded)}
-                style={{ cursor: isLong ? 'pointer' : 'default', userSelect: 'none' }}
+                className={`source-content ${isLong ? 'expandable' : ''}`}
                 title={isLong ? "Klicka för att visa/dölja hela texten" : ""}
             >
-                <span style={{ opacity: 0.85, fontStyle: 'italic', display: 'block' }}>
+                <span className="source-text">
                     "{isExpanded || !isLong ? src.content : src.content.substring(0, 200) + '...'}"
                 </span>
                 {isLong && (
@@ -46,6 +46,9 @@ function SourceCard({ src }) {
     )
 }
 
+// =====================================================================
+// HUVUDKOMPONENT: APP
+// =====================================================================
 function App() {
     // STATE-HANTERING
     const [file, setFile] = useState(null)
@@ -195,30 +198,28 @@ function App() {
                     <div className="upload-container">
                         <div className="upload-card">
                             {isUploading ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0' }}>
-                                    <div style={{ transform: 'scale(2)', marginBottom: '20px', color: 'var(--accent)' }}>
+                                <div className="uploading-state">
+                                    <div className="spinner-container">
                                         <Spinner />
                                     </div>
-                                    <h2 style={{ color: 'var(--text)' }}>Bearbetar dokumentet...</h2>
-                                    <p style={{ color: '#9aa0a6' }}>AI:n läser in och indexerar texten.</p>
+                                    <h2 className="uploading-title">Bearbetar dokumentet...</h2>
+                                    <p className="uploading-desc">AI:n läser in och indexerar texten.</p>
                                 </div>
                             ) : (
                                 <>
-                                    <div style={{ fontSize: '3rem', marginBottom: '10px' }}>📂</div>
-                                    <h2 style={{ marginTop: 0, marginBottom: '10px', color: 'var(--text)' }}>Välkommen</h2>
-                                    <p style={{ color: '#9aa0a6', marginBottom: '30px', fontSize: '0.95rem' }}>
-                                        Ladda upp en PDF för att starta konversationen och ställa frågor om innehållet.
-                                    </p>
+                                    <div className="upload-icon">📂</div>
+                                    <h2 className="upload-title">Välkommen</h2>
+                                    <p className="upload-desc">Ladda upp en PDF för att starta konversationen och ställa frågor om innehållet.</p>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+                                    <div className="upload-actions">
                                         <label className="upload-label">
-                                            <span style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: 'var(--text)' }}>
+                                            <span className="upload-file-name">
                                                 {file ? `📄 ${file.name}` : 'Klicka här för att välja PDF-fil'}
                                             </span>
-                                            <span style={{ fontSize: '0.85rem', color: '#9aa0a6' }}>
+                                            <span className="upload-file-hint">
                                                 {file ? 'Fil vald och redo att laddas upp' : 'Endast PDF-filer stöds'}
                                             </span>
-                                            <input type="file" accept=".pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+                                            <input type="file" accept=".pdf" onChange={handleFileChange} className="hidden-file-input" />
                                         </label>
 
                                         <button
@@ -231,7 +232,7 @@ function App() {
                                     </div>
 
                                     {uploadStatus && (
-                                        <div style={{ marginTop: '20px', color: 'var(--accent)', fontSize: '0.9rem' }}>
+                                        <div className="upload-status-msg">
                                             {uploadStatus}
                                         </div>
                                     )}
@@ -254,17 +255,17 @@ function App() {
                                             {msg.role === 'ai' && <strong className="message-sender">Smart PDF-Assistent</strong>}
 
                                             {isLongUserMessage ? (
-                                                <details style={{ cursor: 'pointer' }}>
-                                                    <summary style={{ outline: 'none', userSelect: 'none', fontWeight: '500' }}>
+                                                <details className="msg-details">
+                                                    <summary className="msg-summary">
                                                         <span>{msg.text.substring(0, 100)}...</span>
-                                                        <span style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'block', marginTop: '4px' }}>[ Visa hela ditt meddelande ]</span>
+                                                        <span className="msg-expand-hint">[ Visa hela ditt meddelande ]</span>
                                                     </summary>
-                                                    <div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                                                    <div className="msg-expanded-text">
                                                         {msg.text}
                                                     </div>
                                                 </details>
                                             ) : (
-                                                <div style={{ opacity: msg.isTemp ? 0.8 : 1 }}>
+                                                <div className={msg.isTemp ? 'msg-temp' : ''}>
                                                     {msg.role === 'ai' && !msg.isTemp ? (
                                                         <ReactMarkdown>{msg.text}</ReactMarkdown>
                                                     ) : (
@@ -289,39 +290,13 @@ function App() {
                                                 );
 
                                                 return (
-                                                    <div style={{
-                                                        marginTop: '14px',
-                                                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                                                        paddingTop: '10px',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: '8px'
-                                                    }}>
-                                                        <details style={{ fontSize: '0.75rem', cursor: 'pointer', color: '#9aa0a6' }}>
-                                                            <summary style={{
-                                                                outline: 'none',
-                                                                userSelect: 'none',
-                                                                listStyle: 'none',
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                gap: '6px',
-                                                                fontWeight: '500',
-                                                                transition: 'color 0.2s'
-                                                            }}
-                                                                     onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent)'}
-                                                                     onMouseOut={(e) => e.currentTarget.style.color = '#9aa0a6'}
-                                                            >
+                                                    <div className="sources-container">
+                                                        <details className="sources-details">
+                                                            <summary className="sources-summary">
                                                                 <span>🔍 Källor från dokumentet ({uniqueSources.length} {uniqueSources.length === 1 ? 'sida' : 'sidor'})</span>
                                                             </summary>
 
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                gap: '8px',
-                                                                marginTop: '10px',
-                                                                textAlign: 'left',
-                                                                cursor: 'default'
-                                                            }}>
+                                                            <div className="sources-list">
                                                                 {uniqueSources.map((src, sIndex) => (
                                                                     <SourceCard key={sIndex} src={src} />
                                                                 ))}
@@ -360,18 +335,18 @@ function App() {
                         {/* SIDFOT MED DOKUMENTBYTE */}
                         <div className="footer">
                             <div>
-                                <span style={{ color: '#9aa0a6' }}>Aktuellt dokument: </span>
+                                <span className="footer-hint">Aktuellt dokument: </span>
                                 <strong>{loadedFileName}</strong>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <span style={{ color: '#9aa0a6' }}>Vill du byta?</span>
+                            <div className="footer-actions">
+                                <span className="footer-hint">Vill du byta?</span>
                                 <input
                                     key={loadedFileName}
                                     type="file"
                                     accept=".pdf"
                                     onChange={handleFileChange}
-                                    style={{ color: '#9aa0a6', width: '200px' }}
+                                    className="footer-file-input"
                                 />
                                 {file && (
                                     <button onClick={uploadPDF} className="change-doc-btn">
