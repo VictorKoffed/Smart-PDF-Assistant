@@ -249,9 +249,19 @@ function App() {
                             {messages.map((msg, index) => {
                                 const isLongUserMessage = msg.role === 'user' && msg.text.length > 250;
 
+                                // =====================================================================
+                                // ANIMATIONS-LOGIK (React Reconciliation)
+                                // ---------------------------------------------------------------------
+                                // Genom att dynamiskt byta 'key' när meddelandet går från temporärt
+                                // ("Tänker...") till färdigt svar, tvingar vi React att radera den gamla
+                                // bubblan och rendera en helt ny. Detta gör att CSS-animationen spelas upp!
+                                // =====================================================================
+                                const messageKey = msg.isTemp ? `temp-${index}` : `msg-${index}`;
+                                const isFinishedAiResponse = msg.role === 'ai' && !msg.isTemp;
+
                                 return (
-                                    <div key={index} className={`message-wrapper ${msg.role}`}>
-                                        <div className={`message-bubble ${msg.role}`}>
+                                    <div key={messageKey} className={`message-wrapper ${msg.role}`}>
+                                        <div className={`message-bubble ${msg.role} ${isFinishedAiResponse ? 'ai-pop-animation' : ''}`}>
                                             {msg.role === 'ai' && <strong className="message-sender">Smart PDF-Assistent</strong>}
 
                                             {isLongUserMessage ? (
@@ -341,13 +351,22 @@ function App() {
 
                             <div className="footer-actions">
                                 <span className="footer-hint">Vill du byta?</span>
-                                <input
-                                    key={loadedFileName}
-                                    type="file"
-                                    accept=".pdf"
-                                    onChange={handleFileChange}
-                                    className="footer-file-input"
-                                />
+                                {/* =====================================================================
+                                    UX-FÖRBÄTTRING: Anpassad filväljare
+                                    ---------------------------------------------------------------------
+                                    Vi döljer webbläsarens standardknapp och använder en label som
+                                    fungerar som en klickbar länk istället för ett mycket renare UI.
+                                ===================================================================== */}
+                                <label className="footer-file-label">
+                                    <span className="footer-file-custom-btn">📁 Välj ny fil</span>
+                                    <input
+                                        key={loadedFileName}
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={handleFileChange}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
                                 {file && (
                                     <button onClick={uploadPDF} className="change-doc-btn">
                                         Analysera nytt dokument

@@ -234,10 +234,13 @@
 
 .message-bubble {
   max-width: 80%;
-  padding: 12px 16px;
+  /* UX: Ökade paddingen marginellt för bättre luftighet */
+  padding: 16px 20px;
   border-radius: 12px;
   white-space: pre-wrap;
   line-height: 1.5;
+  /* UX: Vänsterställer texten. Kritisk för läsbarhet av listor och långa stycken! */
+  text-align: left;
 }
 
 .message-bubble.user {
@@ -307,13 +310,19 @@
   outline: none;
 }
 
+/* UX: Gjorde knappen mer framträdande med accentfärgen för tydligare Call-To-Action */
 .send-btn {
   padding: 0 24px;
-  background-color: var(--text);
+  background-color: var(--accent);
   color: var(--bg);
   border: none;
   border-radius: 24px;
   font-weight: bold;
+  transition: opacity 0.2s; /* Mjuk övergång vid hover */
+}
+
+.send-btn:hover:not(:disabled) {
+  opacity: 0.9;
 }
 
 .send-btn:not(:disabled) {
@@ -348,9 +357,22 @@
   color: #9aa0a6;
 }
 
-.footer-file-input {
-  color: #9aa0a6;
-  width: 200px;
+/* UX: Styling för den anpassade filväljaren i footern */
+.footer-file-label {
+  display: flex;
+  align-items: center;
+}
+
+.footer-file-custom-btn {
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.footer-file-custom-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .change-doc-btn {
@@ -474,4 +496,48 @@
 
 .spinner-icon {
   margin-right: 8px;
+}
+
+/* =====================================================================
+   ANIMATIONER (AI-Svar Effekter)
+   ---------------------------------------------------------------------
+   Ger en mjuk, modern "pop"-effekt och en ljusgradient som sveper
+   över svarsbubblan när AI:n har tänkt klart.
+===================================================================== */
+.ai-pop-animation {
+  position: relative;
+  overflow: hidden; /* Håller gradienten inuti bubblans rundade hörn */
+  animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Gradienten som sveper förbi. Pseudo-element används för att inte störa innehållet. */
+.ai-pop-animation::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  /* Skapar en mjuk övergång med applikationens accentfärg (ljusblå i detta fall) */
+  background: linear-gradient(
+          to right,
+          transparent,
+          rgba(138, 180, 248, 0.15),
+          transparent
+  );
+  animation: sweep-gradient 0.8s ease-out forwards;
+  pointer-events: none; /* Ser till att texten inuti fortfarande kan markeras av användaren */
+}
+
+/* Animation 1: Den mjuka popp-effekten */
+@keyframes pop-in {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Animation 2: Gradient-svepet från vänster till höger */
+@keyframes sweep-gradient {
+  0% { left: -100%; }
+  100% { left: 200%; }
 }
