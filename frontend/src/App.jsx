@@ -4,7 +4,7 @@
 // Denna fil hanterar hela gränssnittet för Smart PDF-Assistent:
 // - Uppladdningsvy för PDF-filer.
 // - Interaktiv chattvy med meddelandehantering och Markdown-stöd.
-// - Kommunikation med FastAPI-backend via fetch.
+// - Sessionshantering för att isolera användardata mot backend.
 //
 // ANVISNING FÖR ATT STARTA KLIENTEN:
 // Kör följande kommando i terminalen: npm run dev
@@ -13,10 +13,20 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
-// Hämta API-URL från miljövariabler (med localhost som fallback)
+// =====================================================================
+// MILJÖVARIABLER
+// ---------------------------------------------------------------------
+// API-URL hämtas från Vite-miljön för att underlätta byte mellan
+// utvecklingsmiljö och produktion utan att modifiera koden.
+// =====================================================================
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
-// Enskild komponent för källkort så att state-hanteringen (visa hela chunken) blir helt stabil
+// =====================================================================
+// KOMPONENT: KÄLLHÄNVISNINGSKORT
+// ---------------------------------------------------------------------
+// En fristående komponent för att visa källor från RAG-sökningen.
+// Separerad för att kunna hantera sitt eget expandera/fäll ihop-tillstånd.
+// =====================================================================
 function SourceCard({ src, accentColor, borderColor, textColor, bg }) {
     const [isExpanded, setIsExpanded] = useState(false)
     const isLong = src.content.length > 200
@@ -78,9 +88,18 @@ function App() {
     const [messages, setMessages] = useState([])
     const [isAsking, setIsAsking] = useState(false)
 
-    // Referens för att automatiskt skrolla ner till senaste meddelandet i chatten
     const chatEndRef = useRef(null)
 
+    // =====================================================================
+    // SESSIONSHANTERING
+    // ---------------------------------------------------------------------
+    // Skapar ett unikt UUID när klienten startar för första gången.
+    // Detta ID skickas med som en header i varje anrop till servern för
+    // att hålla isär olika användares data och vektor-databaser.
+    // =====================================================================
+    const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Date.now().toString())
+
+    // Scrolla automatiskt till botten när nya meddelanden anländer
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
@@ -105,12 +124,14 @@ function App() {
         formData.append('file', file)
 
         try {
-            // Använder API_URL från miljövariabeln här!
             const response = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
+                headers: {
+                    'X-Session-ID': sessionIdRef.current
+                },
                 body: formData,
             })
-            if (!response.ok) throw new Error('Serverfel')
+            if (!response.ok) throw new Error('Serverfel vid uppladdning')
             const data = await response.json()
 
             setUploadStatus('✅ ' + data.message)
@@ -134,6 +155,9 @@ function App() {
 
     // =====================================================================
     // FRÅGEHANTERING (RAG-ANROP MOT BACKEND)
+    // ---------------------------------------------------------------------
+    // Hanterar användarens inmatning, uppdaterar UI med ett temporärt
+    // väntemeddelande, och skickar frågan till servern.
     // =====================================================================
     const askAI = async () => {
         if (!question.trim()) return
@@ -152,17 +176,20 @@ function App() {
         }])
 
         try {
-            // Använder API_URL från miljövariabeln här!
             const response = await fetch(`${API_URL}/ask`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': sessionIdRef.current
+                },
                 body: JSON.stringify({ question: currentQuestion }),
             })
 
-            if (!response.ok) throw new Error('Kommunikationsfel')
+            if (!response.ok) throw new Error('Kommunikationsfel mot servern')
 
             const data = await response.json()
 
+            // Uppdaterar det temporära meddelandet med det riktiga svaret från AI:n
             setMessages(prev => {
                 const newMessages = [...prev]
                 newMessages[newMessages.length - 1] = {
@@ -187,6 +214,10 @@ function App() {
 
     // =====================================================================
     // DESIGN & STYLING
+    // ---------------------------------------------------------------------
+    // Definierar färgschema och CSS-animationer.
+    // Notera: I ett större projekt bryts detta med fördel ut i separata
+    // CSS-filer eller CSS-in-JS lösningar (ex. Tailwind eller Styled Components).
     // =====================================================================
     const colors = {
         bg: '#131314',
@@ -235,7 +266,6 @@ function App() {
 
             <div style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-                {/* HEADER MED LOGGA OCH TITEL */}
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -273,7 +303,6 @@ function App() {
                     </div>
                 </div>
 
-                {/* VY 1: UPPPLADDNINGSRUTA */}
                 {!isDocumentReady && (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                         <div style={{
@@ -359,7 +388,6 @@ function App() {
                     </div>
                 )}
 
-                {/* VY 2: CHATTGRÄNSSNITT */}
                 {isDocumentReady && (
                     <>
                         <div style={{
@@ -421,7 +449,6 @@ function App() {
                                                 </div>
                                             )}
 
-                                            {/* KÄLLHÄNVISNINGAR MED UNIKA SIDOR */}
                                             {msg.sources && msg.sources.length > 0 && !msg.isTemp && (() => {
                                                 const uniqueSources = Array.from(
                                                     new Map(msg.sources.map(src => [src.page, src])).values()
@@ -476,7 +503,6 @@ function App() {
                                                     </div>
                                                 );
                                             })()}
-
                                         </div>
                                     </div>
                                 )
@@ -484,7 +510,6 @@ function App() {
                             <div ref={chatEndRef} />
                         </div>
 
-                        {/* INMATNINGSFÄLT FÖR FRÅGOR */}
                         <div style={{
                             display: 'flex',
                             gap: '10px',
@@ -528,7 +553,6 @@ function App() {
                             </button>
                         </div>
 
-                        {/* SIDFOT MED DOKUMENTBYTE */}
                         <div style={{
                             padding: '16px 20px',
                             backgroundColor: colors.bg,
@@ -576,7 +600,6 @@ function App() {
                         </div>
                     </>
                 )}
-
             </div>
         </div>
     )
