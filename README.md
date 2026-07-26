@@ -84,3 +84,10 @@ Följ dessa steg för att köra projektet lokalt på din maskin.
     Bash
 
     npm run dev
+
+---
+
+## 💻 Hårdvara & Prestanda
+Detta projekt är optimerat för att kunna köras smidigt på konsumenthårdvara. Under utvecklingen har systemet körts lokalt på en laptop med ett **Nvidia RTX 4060M (8GB VRAM)**.
+
+---
