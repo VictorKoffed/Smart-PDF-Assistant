@@ -45,11 +45,41 @@ Följ dessa steg för att köra projektet lokalt på din maskin.
 ---
 
 ### 1. Starta Backend (FastAPI)
-1. Navigera till mappen för din backend i terminalen.
-2. Skapa och aktivera en virtuell miljö (valfritt men rekommenderat):
+1. Navigera till mappen `backend/` i terminalen.
+2. Skapa och aktivera en virtuell miljö (rekommenderas):
    ```bash
    python -m venv venv
    # Windows:
    venv\Scripts\activate
    # Mac/Linux:
    source venv/bin/activate
+
+    Installera alla beroenden:
+    Bash
+
+    pip install -r requirements.txt
+
+    Konfigurera miljövariabler:
+    Kopiera mallen .env.example och skapa en ny fil med namnet .env. Anpassa IP-adresser och modellnamn efter din lokala setup.
+
+    Starta servern:
+    Bash
+
+    uvicorn main:app --reload
+
+2. Starta Frontend (React)
+
+    Öppna en ny terminal och navigera till mappen frontend/.
+
+    Installera alla beroenden:
+    Bash
+
+    npm install
+
+    Konfigurera miljövariabler:
+    Kopiera mallen .env.example och skapa en ny fil med namnet .env. Kontrollera att API-URL:en matchar din backend (standard är http://127.0.0.1:8000).
+
+    Starta klienten:
+    Bash
+
+    npm run dev

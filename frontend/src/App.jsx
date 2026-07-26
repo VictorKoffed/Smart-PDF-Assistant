@@ -13,6 +13,9 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 
+// Hämta API-URL från miljövariabler (med localhost som fallback)
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+
 // Enskild komponent för källkort så att state-hanteringen (visa hela chunken) blir helt stabil
 function SourceCard({ src, accentColor, borderColor, textColor, bg }) {
     const [isExpanded, setIsExpanded] = useState(false)
@@ -102,7 +105,8 @@ function App() {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/upload', {
+            // Använder API_URL från miljövariabeln här!
+            const response = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
             })
@@ -148,7 +152,8 @@ function App() {
         }])
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/ask', {
+            // Använder API_URL från miljövariabeln här!
+            const response = await fetch(`${API_URL}/ask`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ question: currentQuestion }),

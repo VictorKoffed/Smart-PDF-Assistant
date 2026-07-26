@@ -13,8 +13,18 @@ import os
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv  # <-- LÄGG TILL DETTA FÖR MILJÖVARIABLER
 
 from services import PDFDocumentAssistant
+
+# Ladda in variabler från .env-filen (om den finns)
+load_dotenv()
+
+# Hämta miljövariabler eller använd fallback-värden
+OLLAMA_HOST = os.getenv("OLLAMA_BASE_URL", "http://100.71.88.71:11434")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma4:e4b")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "bge-m3")
 
 # Initiera FastAPI-applikationen
 app = FastAPI()
@@ -22,13 +32,12 @@ app = FastAPI()
 # =====================================================================
 # CORS-INSTÄLLNINGAR
 # ---------------------------------------------------------------------
-# Tillåter att din React-frontend (som körs på port 5173) kan kommunicera
-# med denna backend-server utan säkerhetsspärrar.
-# ANPASSNING: Ändra 'allow_origins' om klienten flyttas till en annan URL/port.
+# Tillåter att din React-frontend kan kommunicera med servern.
+# Nu hämtas den tillåtna adressen dynamiskt via .env.
 # =====================================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[FRONTEND_URL], # <-- ANVÄNDER VARIABELN HÄR
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,17 +47,14 @@ app.add_middleware(
 # INITIERING AV ASSISTENTEN
 # ---------------------------------------------------------------------
 # Skapar en global instans av vår logikklass (PDFDocumentAssistant).
-# ANPASSNING:
-# - 'ollama_host': Ändra IP-adress/port till din Ollama-server.
-# - 'model_name': Byt till den LLM du vill använda (t.ex. gemma4:e4b).
-# - 'embedding_model': Byt till den embeddingsmodell du föredrar.
+# Värdena styrs nu via .env-filen för smidigare drift i olika miljöer.
 # =====================================================================
 assistant = PDFDocumentAssistant(
     upload_dir="uploads",
     vector_db_dir="./chroma_db",
-    ollama_host="http://100.71.88.71:11434",
-    model_name="gemma4:e4b",      # <-- ANPASSNING: Byt modellnamn här vid behov!
-    embedding_model="bge-m3"     # <-- ANPASSNING: Byt embeddingsmodell här vid behov!
+    ollama_host=OLLAMA_HOST,          # <-- ANVÄNDER VARIABELN HÄR
+    model_name=LLM_MODEL,             # <-- ANVÄNDER VARIABELN HÄR
+    embedding_model=EMBEDDING_MODEL   # <-- ANVÄNDER VARIABELN HÄR
 )
 
 
@@ -59,9 +65,6 @@ class QueryRequest(BaseModel):
 
 # =====================================================================
 # ENDPOINT: UPPPLADDNING AV PDF (/upload)
-# ---------------------------------------------------------------------
-# Tar emot en fil från frontend, validerar att det är en PDF, rensar
-# tidigare minne/databaser, sparar filen lokalt och startar RAG-processen.
 # =====================================================================
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -70,7 +73,7 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Endast PDF-filer tillåts.")
 
     try:
-        # Rnsa tidigare konversation och vektordatabas inför ny uppladdning
+        # Rensa tidigare konversation och vektordatabas inför ny uppladdning
         assistant.clear_memory()
 
         # Spara ner filen i den angivna uppladdningsmappen
@@ -88,9 +91,6 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 # =====================================================================
 # ENDPOINT: STÄLLA FRÅGOR (/ask)
-# ---------------------------------------------------------------------
-# Tar emot en fråga från klienten, verifierar att ett dokument finns
-# inläst, och skickar frågan vidare till RAG-motorn för att generera svar.
 # =====================================================================
 @app.post("/ask")
 def ask_question(payload: QueryRequest):

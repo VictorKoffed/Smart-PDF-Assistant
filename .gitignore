@@ -6,3 +6,6 @@ uploads/
 .env
 dist/
 .DS_Store
+
+# Miljövariabler
+.env
