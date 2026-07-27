@@ -9,7 +9,7 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 * **RAG-flöde:** Delar upp PDF-dokument i hanterbara textbitar (chunks), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
 * **Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare.
 * **Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
-* **UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka animeringar (t.ex. skräddarsydda "pop"-animationer och ljusgradienter när AI:n har färdigställt sitt svar).
+* **UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka animeringar (t.ex. skräddarsydda "pop"-animationer, ljusgradienter när AI:n har färdigställt sitt svar samt laddnings animationer).
 * **Källhänvisningar:** Visar exakt vilka sidor och textstycken (chunks) som AI använt för att generera sitt svar, med möjlighet att expandera och läsa hela stycket.
 
 ---
