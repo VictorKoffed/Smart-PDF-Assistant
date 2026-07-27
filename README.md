@@ -1,15 +1,15 @@
 # 📄 Smart PDF-Assistent
 
-En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generation) som låter dig ladda upp PDF-filer och ställa interaktiva frågor om deras innehåll. Systemet körs helt lokalt med hjälp av **Ollama**, **FastAPI** och **React**.
+En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generation) som låter dig ladda upp PDF-filer och ställa interaktiva frågor om deras innehåll. Systemet körs lokalt med hjälp av **Ollama**, **FastAPI** och **React**.
 
 ---
 
 ## 🚀 Funktioner
-* **Lokal & Säker:** All AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
-* **Smart RAG-flöde:** Delar upp PDF-dokument i hanterbara textbitar (chunks), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
-* **Multi-user & Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare. Ingen användare riskerar att läsa en annans filer eller chatthistorik.
-* **Säker Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
-* **Interaktiv Chatt & Polerad UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka mikrointeraktioner (såsom skräddarsydda "pop"-animationer och ljusgradienter när AI:n har färdigställt sitt svar).
+* **Lokal:** AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
+* **RAG-flöde:** Delar upp PDF-dokument i hanterbara textbitar (chunks), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
+* **Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare.
+* **Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
+* **UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka animeringar (t.ex. skräddarsydda "pop"-animationer och ljusgradienter när AI:n har färdigställt sitt svar).
 * **Källhänvisningar:** Visar exakt vilka sidor och textstycken (chunks) som AI använt för att generera sitt svar, med möjlighet att expandera och läsa hela stycket.
 
 ---
@@ -92,7 +92,7 @@ Följ dessa steg för att köra projektet lokalt på din maskin.
 ## 💻 Utvecklingsmiljö & Arkitektur
 Systemet är designat för att vara flexibelt och kan köras på en och samma maskin, men är utvecklat med en **distribuerad arkitektur** där AI-motorn är separerad från backend och frontend.
 
-**AI- & Inferensserver (Ollama i Docker):**
+**AI-server (Ollama i Docker):**
 * **OS:** Ubuntu Server
 * **Hårdvara:** Nvidia RTX 4060M (8GB VRAM), AMD Ryzen 7 8840HS, 32GB DDR5 5600MHz (CL40)
 * **Roll:** Hanterar uteslutande RAG-embeddings och LLM-generering, vilket håller huvudapplikationen lättviktig.
@@ -103,6 +103,6 @@ Systemet är designat för att vara flexibelt och kan köras på en och samma ma
 * **Verktyg:** PyCharm (Backend) & WebStorm (Frontend)
 * **Roll:** Utveckling, klienthantering och API-routing.
 
-Denna uppdelning demonstrerar hur applikationen smidigt kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör effektiv skalning.
+Denna uppdelning visar hur applikationen  kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör skalning.
 
 ---
