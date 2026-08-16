@@ -45,10 +45,10 @@ app = FastAPI()
 # =====================================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=["*"],  # Tillåt alla ursprung under utveckling
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Tillåt alla metoder (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Tillåt alla headers (inklusive X-Session-ID)
 )
 
 # =====================================================================
