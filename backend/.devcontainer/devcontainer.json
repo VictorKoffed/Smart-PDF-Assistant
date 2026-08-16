@@ -2,10 +2,16 @@
   "name": "Smart PDF Backend (Python)",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "forwardPorts": [8000],
-  "postCreateCommand": "cd backend && pip install -r requirements.txt",
+  "updateRemoteUserUID": true,
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+  "postCreateCommand": "cd backend && pip install --upgrade pip && pip install -r requirements.txt",
   "customizations": {
     "jetbrains": {
-      "backend": "PyCharmCommunity"
+      "backend": "PyCharmProfessional"
     }
   }
 }
