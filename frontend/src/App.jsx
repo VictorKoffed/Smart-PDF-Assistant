@@ -5,6 +5,7 @@
 // - Uppladdningsvy för PDF-filer.
 // - Interaktiv chattvy med meddelandehantering och Markdown-stöd.
 // - Sessionshantering för att isolera användardata mot backend.
+// - Starta miljö: npm run dev -- --host
 // =====================================================================
 
 import { useState, useRef, useEffect } from 'react'
