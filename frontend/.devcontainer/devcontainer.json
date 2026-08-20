@@ -2,10 +2,21 @@
   "name": "Smart PDF Frontend (React)",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "forwardPorts": [5173],
-  "postCreateCommand": "npm install",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+  "postCreateCommand": "npm install && pip install aider-chat",
+  "remoteEnv": {
+    "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}"
+  },
   "customizations": {
     "jetbrains": {
-      "backend": "WebStorm"
+      "backend": "WebStorm",
+      "plugins": [
+        "Continue:com.github.continuedev.continueintellijextension"
+      ]
     }
   }
 }
