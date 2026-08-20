@@ -8,10 +8,16 @@
       "version": "3.11"
     }
   },
-  "postCreateCommand": "cd backend && pip install --upgrade pip && pip install -r requirements.txt",
+  "postCreateCommand": "cd backend && pip install --upgrade pip && pip install -r requirements.txt && pip install aider-chat",
+  "remoteEnv": {
+    "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}"
+  },
   "customizations": {
     "jetbrains": {
-      "backend": "PyCharmProfessional"
+      "backend": "PyCharmProfessional",
+      "plugins": [
+        "Continue:com.github.continuedev.continueintellijextension"
+      ]
     }
   }
 }
