@@ -165,6 +165,8 @@ Answer in Swedish:"""
 
             answer = response.get('response', 'Inget svar genererades.')
             self.chat_history.append((question, answer))
+            if len(self.chat_history) > 10:
+                self.chat_history = self.chat_history[-10:]
 
             # Formatera källorna till en snygg struktur för frontend
             formatted_sources = [{"page": page, "content": content} for page, content in sources]
