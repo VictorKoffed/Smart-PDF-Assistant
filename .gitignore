@@ -9,3 +9,4 @@ dist/
 
 # Miljövariabler
 .env
+.aider*
