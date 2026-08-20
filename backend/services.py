@@ -32,12 +32,25 @@ class PDFDocumentAssistant:
     vektorsökning och AI-generering.
     """
 
-    def __init__(self, upload_dir: str, vector_db_dir: str, ollama_host: str, model_name: str, embedding_model: str):
+    def __init__(
+        self,
+        upload_dir: str,
+        vector_db_dir: str,
+        ollama_host: str,
+        model_name: str,
+        embedding_model: str,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 100,
+        k: int = 3
+    ):
         self.upload_dir = upload_dir
         self.vector_db_dir = vector_db_dir
         self.ollama_host = ollama_host
         self.model_name = model_name
         self.embedding_model = embedding_model
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.k = k
 
         # Håller reda på om en aktiv vektordatabas/dokument finns inläst
         self.vectorstore = None
@@ -88,8 +101,7 @@ class PDFDocumentAssistant:
                 raise ValueError("PDF-filen verkar vara tom eller kunde inte läsas.")
 
             # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
-            # ANPASSNING: Ändra chunk_size eller chunk_overlap vid behov av mer/mindre detaljer.
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
             splits = text_splitter.split_documents(docs)
 
             # 3. Skapa vektorer (embeddings) och spara i ChromaDB samt sätt vectorstore
@@ -116,7 +128,7 @@ class PDFDocumentAssistant:
                 raise ValueError("Ingen databas aktiv. Vänligen ladda upp ett dokument först.")
 
             # Hämta de k mest relevanta textbitarna (chunks) från dokumentet
-            docs = self.vectorstore.similarity_search(question, k=3)
+            docs = self.vectorstore.similarity_search(question, k=self.k)
 
             context = ""
             sources = set()
