@@ -110,6 +110,12 @@ class PDFDocumentAssistant:
                 documents=splits,
                 embedding=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
             )
+        except FileNotFoundError as e:
+            logger.error(f"Filen hittades inte: {e}")
+            raise RuntimeError(f"Kunde inte hitta PDF-dokumentet: {str(e)}")
+        except ValueError as e:
+            logger.error(f"Valideringsfel vid bearbetning av PDF: {e}")
+            raise RuntimeError(f"Ogiltigt PDF-dokument: {str(e)}")
         except Exception as e:
             logger.error(f"Fel vid bearbetning av PDF: {e}")
             raise RuntimeError(f"Kunde inte bearbeta PDF-dokumentet: {str(e)}")
@@ -188,6 +194,9 @@ Answer in Swedish:"""
                 "sources": formatted_sources
             }
 
+        except ValueError as e:
+            logger.error(f"Valideringsfel vid AI-förfrågan: {e}")
+            raise RuntimeError(str(e))
         except Exception as e:
             logger.error(f"Fel vid generering av svar från AI: {e}")
             raise RuntimeError(f"Kunde inte kommunicera med AI-modellen: {str(e)}")
