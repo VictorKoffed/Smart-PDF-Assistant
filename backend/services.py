@@ -91,25 +91,30 @@ class PDFDocumentAssistant:
         - Läser in PDF-filen.
         - Delar upp texten i hanterbara bitar (chunks).
         - Skapar embeddings och sparar ner dem i ChromaDB.
+        - Raderar filen från filsystemet när den bearbetats.
         """
         try:
-            # 1. Läs in PDF-dokumentet sida för sida
-            loader = PyPDFLoader(file_path)
-            docs = loader.load()
+            try:
+                # 1. Läs in PDF-dokumentet sida för sida
+                loader = PyPDFLoader(file_path)
+                docs = loader.load()
 
-            if not docs:
-                raise ValueError("PDF-filen verkar vara tom eller kunde inte läsas.")
+                if not docs:
+                    raise ValueError("PDF-filen verkar vara tom eller kunde inte läsas.")
 
-            # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
-            splits = text_splitter.split_documents(docs)
+                # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
+                splits = text_splitter.split_documents(docs)
 
-            # 3. Skapa vektorer (embeddings) och spara i ChromaDB samt sätt vectorstore
-            self.vectorstore = Chroma.from_documents(
-                client=self.chroma_client,
-                documents=splits,
-                embedding=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
-            )
+                # 3. Skapa vektorer (embeddings) och spara i ChromaDB samt sätt vectorstore
+                self.vectorstore = Chroma.from_documents(
+                    client=self.chroma_client,
+                    documents=splits,
+                    embedding=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
+                )
+            finally:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
         except FileNotFoundError as e:
             logger.error(f"Filen hittades inte: {e}")
             raise RuntimeError(f"Kunde inte hitta PDF-dokumentet: {str(e)}")
