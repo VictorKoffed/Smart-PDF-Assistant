@@ -68,6 +68,7 @@ orjson==3.11.9
 ormsgpack==1.12.2
 overrides==7.7.0
 packaging==26.2
+pdfplumber
 pluggy==1.6.0
 propcache==0.5.2
 protobuf==7.35.1
