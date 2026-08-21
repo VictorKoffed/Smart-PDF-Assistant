@@ -112,3 +112,5 @@ Hela applikationen är containeriserad och redo att driftsättas direkt i en ser
    ```text
    VITE_API_URL=http://<SERVER_IP>:5174
    OLLAMA_BASE_URL=http://<SERVER_IP>:11434
+   LLM_MODEL=gemma4:e4b
+   EMBEDDING_MODEL=bge-m3
