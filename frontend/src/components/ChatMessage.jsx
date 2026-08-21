@@ -59,26 +59,28 @@ export default function ChatMessage({ msg, isFinishedAiResponse }) {
                         </div>
                     </details>
                 ) : (
-                    <div className={msg.isTemp ? 'msg-temp' : ''}>
-                        {msg.role === 'ai' && !msg.isTemp ? (
-                            <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    <div className={msg.isThinking ? 'msg-temp' : ''}>
+                        {msg.role === 'ai' ? (
+                            msg.isThinking && msg.text === '' ? (
+                                // Visar prickar när vi väntar på första tecknet
+                                <span>
+                                    <span className="dot-1">.</span>
+                                    <span className="dot-2">.</span>
+                                    <span className="dot-3">.</span>
+                                </span>
+                            ) : (
+                                // Visar Markdown så fort texten börjar strömma in
+                                <ReactMarkdown>{msg.text}</ReactMarkdown>
+                            )
                         ) : (
-                            <span>
-                                {msg.text}
-                                {msg.isThinking && (
-                                    <span>
-                                        <span className="dot-1">.</span>
-                                        <span className="dot-2">.</span>
-                                        <span className="dot-3">.</span>
-                                    </span>
-                                )}
-                            </span>
+                            // Användarens meddelanden (vanlig text)
+                            <span>{msg.text}</span>
                         )}
                     </div>
                 )}
 
                 {/* KÄLLHÄNVISNINGAR MED UNIKA SIDOR */}
-                {msg.sources && msg.sources.length > 0 && !msg.isTemp && (() => {
+                {msg.sources && msg.sources.length > 0 && !msg.isThinking && (() => {
                     const uniqueSources = Array.from(
                         new Map(msg.sources.map(src => [src.page, src])).values()
                     );

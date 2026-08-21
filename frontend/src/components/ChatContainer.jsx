@@ -11,20 +11,39 @@ export default function ChatContainer({
                                       }) {
     const chatEndRef = useRef(null);
 
-    // Hanterar auto-scroll när nya meddelanden kommer in
+    const chatContainerRef = useRef(null);
+    const isScrolledUp = useRef(false);
+
+    const handleScroll = () => {
+        if (!chatContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+
+        if (scrollHeight - scrollTop - clientHeight > 100) {
+            isScrolledUp.current = true;
+        } else {
+            isScrolledUp.current = false;
+        }
+    };
+
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (!isScrolledUp.current) {
+            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
     }, [messages]);
 
     return (
         <>
-            <div className="chat-container">
+            <div
+                className="chat-container"
+                ref={chatContainerRef}
+                onScroll={handleScroll}
+            >
                 {messages.map((msg, index) => {
                     // =====================================================================
                     // ANIMATIONS-LOGIK (React Reconciliation)
                     // ---------------------------------------------------------------------
                     // Genom att dynamiskt byta 'key' när meddelandet går från temporärt
-                    // ("Tänker...") till färdigt svar, tvingar vi React att radera den gamla
+                    // ("Tänker...") Till färdigt svar, tvingar vi React att radera den gamla
                     // bubblan och rendera en helt ny. Detta gör att CSS-animationen spelas upp!
                     // =====================================================================
                     const messageKey = msg.isTemp ? `temp-${index}` : `msg-${index}`;
