@@ -29,7 +29,7 @@ function SourceCard({ src }) {
                 </span>
                 {isLong && (
                     <span className="source-expand-btn">
-                        {isExpanded ? '[ Fäll ihop ]' : '[ Visa hela chunken ]'}
+                        {isExpanded ? '[ Fäll ihop ]' : '[ Visa hela chunk ]'}
                     </span>
                 )}
             </div>
@@ -63,7 +63,8 @@ export default function ChatMessage({ msg, isFinishedAiResponse }) {
                         {msg.role === 'ai' ? (
                             msg.isThinking && msg.text === '' ? (
                                 // Visar prickar när vi väntar på första tecknet
-                                <span>
+                                <span className="thinking-indicator">
+                                    Tänker
                                     <span className="dot-1">.</span>
                                     <span className="dot-2">.</span>
                                     <span className="dot-3">.</span>
