@@ -8,7 +8,7 @@
 // - Starta miljö: npm run dev -- --host
 // =====================================================================
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Header from './components/Header'
 import UploadView from './components/UploadView'
 import ChatContainer from './components/ChatContainer'
@@ -29,6 +29,24 @@ function App() {
     const [isAsking, setIsAsking] = useState(false)
 
     const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Date.now().toString())
+    const chatContainerRef = useRef(null)
+    const isScrolledUp = useRef(false)
+
+    const handleScroll = () => {
+        if (!chatContainerRef.current) return
+        const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current
+        if (scrollHeight - scrollTop - clientHeight > 50) {
+            isScrolledUp.current = true
+        } else {
+            isScrolledUp.current = false
+        }
+    }
+
+    useEffect(() => {
+        if (!isScrolledUp.current && chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+        }
+    }, [messages])
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -193,7 +211,7 @@ function App() {
 
     return (
         <div className="app-container">
-            <div className="app-wrapper">
+            <div className="app-wrapper" ref={chatContainerRef} onScroll={handleScroll}>
                 <Header />
 
                 {!isDocumentReady && (
