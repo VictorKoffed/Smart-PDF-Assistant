@@ -129,7 +129,10 @@ function App() {
                                     const newMessages = [...prev]
                                     const lastMsg = newMessages[newMessages.length - 1]
                                     if (lastMsg && lastMsg.role === 'ai') {
-                                        lastMsg.sources = data.sources
+                                        newMessages[newMessages.length - 1] = {
+                                            ...lastMsg,
+                                            sources: data.sources
+                                        }
                                     }
                                     return newMessages
                                 })
@@ -138,8 +141,11 @@ function App() {
                                     const newMessages = [...prev]
                                     const lastMsg = newMessages[newMessages.length - 1]
                                     if (lastMsg && lastMsg.role === 'ai') {
-                                        lastMsg.isThinking = false
-                                        lastMsg.text += data.content
+                                        newMessages[newMessages.length - 1] = {
+                                            ...lastMsg,
+                                            isThinking: false,
+                                            text: lastMsg.text + data.content
+                                        }
                                     }
                                     return newMessages
                                 })
@@ -159,8 +165,11 @@ function App() {
                 const newMessages = [...prev]
                 const lastMsg = newMessages[newMessages.length - 1]
                 if (lastMsg && lastMsg.role === 'ai') {
-                    lastMsg.isThinking = false
-                    lastMsg.text = errorMessage
+                    newMessages[newMessages.length - 1] = {
+                        ...lastMsg,
+                        isThinking: false,
+                        text: errorMessage
+                    }
                 } else {
                     newMessages.push({ role: 'ai', text: errorMessage })
                 }
@@ -172,7 +181,10 @@ function App() {
                 const newMessages = [...prev]
                 const lastMsg = newMessages[newMessages.length - 1]
                 if (lastMsg && lastMsg.role === 'ai') {
-                    lastMsg.isThinking = false
+                    newMessages[newMessages.length - 1] = {
+                        ...lastMsg,
+                        isThinking: false
+                    }
                 }
                 return newMessages
             })
