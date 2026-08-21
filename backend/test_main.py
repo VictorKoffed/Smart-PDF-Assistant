@@ -12,7 +12,7 @@
 import io
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
-from main import app, get_assistant
+from main import app, get_assistant, LLM_MODEL
 
 # Skapar en testklient som simulerar HTTP-anrop direkt mot applikationen
 client = TestClient(app)
@@ -119,8 +119,7 @@ def test_assistant_initialization():
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
-    # ANPASSNING: Om du byter modell i .env, måste detta eventuellt uppdateras
-    assert test_assistant.model_name == "gemma4:e4b"
+    assert test_assistant.model_name == LLM_MODEL
 
     # Uppladdningsmappen ska nu innehålla sessions-id:t
     assert test_assistant.upload_dir == f"uploads/{TEST_SESSION_ID}"
