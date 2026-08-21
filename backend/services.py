@@ -9,6 +9,7 @@
 # =====================================================================
 
 import os
+import re
 import logging
 from typing import List, Dict, Any
 import ollama
@@ -39,9 +40,9 @@ class PDFDocumentAssistant:
         ollama_host: str,
         model_name: str,
         embedding_model: str,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 100,
-        k: int = 3
+        chunk_size: int = 2500,
+        chunk_overlap: int = 250,
+        k: int = 6
     ):
         self.upload_dir = upload_dir
         self.vector_db_dir = vector_db_dir
@@ -103,7 +104,7 @@ class PDFDocumentAssistant:
                     raise ValueError("PDF-filen verkar vara tom eller kunde inte läsas.")
 
                 for doc in docs:
-                    doc.page_content = doc.page_content.replace("\n", " ").strip()
+                    doc.page_content = re.sub(r"\s+", " ", doc.page_content).strip()
 
                 # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
                 text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
