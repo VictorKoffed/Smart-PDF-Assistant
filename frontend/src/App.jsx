@@ -85,8 +85,8 @@ function App() {
 
         setMessages(prev => [...prev, {
             role: 'ai',
-            text: 'Tänker',
-            isTemp: true,
+            text: '',
+            sources: [],
             isThinking: true
         }])
 
@@ -100,28 +100,82 @@ function App() {
                 body: JSON.stringify({ question: currentQuestion }),
             })
 
-            if (!response.ok) throw new Error('Kommunikationsfel mot servern')
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({ detail: 'Kommunikationsfel mot servern' }))
+                throw new Error(errData.detail || 'Kommunikationsfel mot servern')
+            }
 
-            const data = await response.json()
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
 
-            setMessages(prev => {
-                const newMessages = [...prev]
-                newMessages[newMessages.length - 1] = {
-                    role: 'ai',
-                    text: data.answer,
-                    sources: data.sources
+            while (true) {
+                const { value, done } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n\n')
+                buffer = lines.pop()
+
+                for (const line of lines) {
+                    const trimmed = line.trim()
+                    if (trimmed.startsWith('data: ')) {
+                        try {
+                            const jsonStr = trimmed.substring(6)
+                            const data = JSON.parse(jsonStr)
+
+                            if (data.type === 'sources') {
+                                setMessages(prev => {
+                                    const newMessages = [...prev]
+                                    const lastMsg = newMessages[newMessages.length - 1]
+                                    if (lastMsg && lastMsg.role === 'ai') {
+                                        lastMsg.sources = data.sources
+                                    }
+                                    return newMessages
+                                })
+                            } else if (data.type === 'token') {
+                                setMessages(prev => {
+                                    const newMessages = [...prev]
+                                    const lastMsg = newMessages[newMessages.length - 1]
+                                    if (lastMsg && lastMsg.role === 'ai') {
+                                        lastMsg.isThinking = false
+                                        lastMsg.text += data.content
+                                    }
+                                    return newMessages
+                                })
+                            } else if (data.type === 'done') {
+                                // Klar
+                            }
+                        } catch (e) {
+                            console.error('Kunde inte parsea SSE JSON', e)
+                        }
+                    }
                 }
-                return newMessages
-            })
+            }
+
         } catch (error) {
-            const errorMessage = '❌ Kunde inte nå servern eller så avbröts anropet.'
+            const errorMessage = `❌ ${error.message || 'Kunde inte nå servern eller så avbröts anropet.'}`
             setMessages(prev => {
                 const newMessages = [...prev]
-                newMessages[newMessages.length - 1] = { role: 'ai', text: errorMessage }
+                const lastMsg = newMessages[newMessages.length - 1]
+                if (lastMsg && lastMsg.role === 'ai') {
+                    lastMsg.isThinking = false
+                    lastMsg.text = errorMessage
+                } else {
+                    newMessages.push({ role: 'ai', text: errorMessage })
+                }
                 return newMessages
             })
         } finally {
             setIsAsking(false)
+            setMessages(prev => {
+                const newMessages = [...prev]
+                const lastMsg = newMessages[newMessages.length - 1]
+                if (lastMsg && lastMsg.role === 'ai') {
+                    lastMsg.isThinking = false
+                }
+                return newMessages
+            })
         }
     }
 

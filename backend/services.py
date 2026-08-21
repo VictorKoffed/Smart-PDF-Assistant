@@ -10,8 +10,9 @@
 
 import os
 import re
+import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Generator
 import ollama
 
 import chromadb
@@ -174,12 +175,9 @@ Kort sammanfattning:"""
         - Skicka till Ollama-modellen och returnera svar + källor.
         """
         try:
-            # OPTIMERING: Återanvänd den redan inlästa vektordatabasen (self.vectorstore)
-            # istället för att läsa in Chroma från disk vid varje enskild fråga.
             if not self.vectorstore:
                 raise ValueError("Ingen databas aktiv. Vänligen ladda upp ett dokument först.")
 
-            # Hämta de k mest relevanta textbitarna (chunks) från dokumentet
             docs = self.vectorstore.similarity_search(question, k=self.k)
 
             context = ""
@@ -191,7 +189,6 @@ Kort sammanfattning:"""
                 page_str = f"Sida {page_num + 1}" if page_num is not None else "Okänd sida"
                 sources.add((page_str, doc.page_content.strip()))
 
-            # Bygg historik-text av de senaste meddelandena
             history_text = ""
             if self.chat_history:
                 history_text = "Tidigare konversation:\n"
@@ -202,9 +199,6 @@ Kort sammanfattning:"""
             if self.conversation_summary:
                 summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
 
-            # Skapa den slutgiltiga prompten med strikta regler för AI-beteende på engelska
-            # för att maximera modellens instruktionsföljsamhet, men tvinga svaret till svenska.
-            # Notera: Indenteringen här är viktig i Python.
             prompt = f"""You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
 
 CRITICAL RULES:
@@ -225,7 +219,6 @@ Here is the relevant text from the document:
 New question: {question}
 Answer in Swedish:"""
 
-            # Anropa Ollama för att generera svaret
             response = self.ollama_client.generate(
                 model=self.model_name,
                 prompt=prompt
@@ -236,7 +229,6 @@ Answer in Swedish:"""
             if len(self.chat_history) >= 3:
                 self._summarize_memory()
 
-            # Formatera källorna till en snygg struktur för frontend
             formatted_sources = [{"page": page, "content": content} for page, content in sources]
 
             return {
@@ -250,3 +242,82 @@ Answer in Swedish:"""
         except Exception as e:
             logger.error(f"Fel vid generering av svar från AI: {e}")
             raise RuntimeError(f"Kunde inte kommunicera med AI-modellen: {str(e)}")
+
+    def stream_query_rag(self, question: str) -> Generator[str, None, None]:
+        """
+        Streaming-variant av query_rag som skickar källor först och därefter
+        genererar svarstokens via SSE (Server-Sent Events).
+        """
+        try:
+            if not self.vectorstore:
+                raise ValueError("Ingen databas aktiv. Vänligen ladda upp ett dokument först.")
+
+            docs = self.vectorstore.similarity_search(question, k=self.k)
+
+            context = ""
+            sources = set()
+
+            for doc in docs:
+                context += doc.page_content + "\n\n"
+                page_num = doc.metadata.get("page")
+                page_str = f"Sida {page_num + 1}" if page_num is not None else "Okänd sida"
+                sources.add((page_str, doc.page_content.strip()))
+
+            history_text = ""
+            if self.chat_history:
+                history_text = "Tidigare konversation:\n"
+                for q, a in self.chat_history[-3:]:
+                    history_text += f"Användare: {q}\nAI: {a}\n\n"
+
+            summary_text = ""
+            if self.conversation_summary:
+                summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
+
+            prompt = f"""You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
+
+CRITICAL RULES:
+0. Language: You must ALWAYS respond in Swedish, regardless of the prompt language.
+1. Direct Output: Output the response directly without conversational fillers, preambles, or meta-commentary.
+2. Your Identity: If asked who you are, politely state that you are "Smart PDF-Assistent".
+3. Your Capabilities: If asked what you can do, state that you analyze PDF documents, answer questions, and remember context.
+4. Document Ownership: If asked whose document it is or who is mentioned, find the answer in the provided text.
+5. The User: If asked who the user is, state that you do not know who is at the keyboard.
+6. Document Identity: You are NOT the person in the document. Always refer to the person in the text in the third person.
+7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
+8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
+
+{summary_text}{history_text}
+Here is the relevant text from the document:
+{context}
+
+New question: {question}
+Answer in Swedish:"""
+
+            formatted_sources = [{"page": page, "content": content} for page, content in sources]
+
+            # Skicka källor först
+            yield f"data: {json.dumps({'type': 'sources', 'sources': formatted_sources})}\n\n"
+
+            stream = self.ollama_client.generate(
+                model=self.model_name,
+                prompt=prompt,
+                stream=True
+            )
+
+            full_answer = ""
+            for chunk in stream:
+                token = chunk.get('response', '')
+                if token:
+                    full_answer += token
+                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+            self.chat_history.append((question, full_answer))
+            if len(self.chat_history) >= 3:
+                self._summarize_memory()
+
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+        except Exception as e:
+            logger.error(f"Fel vid streaming av svar från AI: {e}")
+            yield f"data: {json.dumps({'type': 'token', 'content': f'Kunde inte kommunicera med AI-modellen: {str(e)}'})}\n\n"
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"

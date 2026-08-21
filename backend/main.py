@@ -14,6 +14,7 @@ import time
 import uuid
 import shutil
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -179,8 +180,10 @@ def ask_question(payload: QueryRequest, x_session_id: str = Header(None)):
         raise HTTPException(status_code=400, detail="Ingen PDF har laddats upp ännu för denna session.")
 
     try:
-        # Utför RAG-sökning och generera svar
-        result = assistant.query_rag(payload.question)
-        return result
+        # Utför RAG-strömning via SSE
+        return StreamingResponse(
+            assistant.stream_query_rag(payload.question),
+            media_type="text/event-stream"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

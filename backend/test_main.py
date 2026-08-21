@@ -88,7 +88,7 @@ def test_ask_without_uploaded_document():
 
 def test_ask_with_uploaded_document():
     """
-    Testar att /ask endpointen returnerar rätt svarsstruktur
+    Testar att /ask endpointen returnerar rätt strömmande svarsstruktur
     när ett dokument faktiskt har laddats upp och behandlats.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
@@ -96,7 +96,7 @@ def test_ask_with_uploaded_document():
     # Sätt en mockad vectorstore så spärren passeras
     test_assistant.vectorstore = MagicMock()
 
-    with patch.object(test_assistant, "query_rag", return_value={"answer": "Testar svar", "sources": []}):
+    with patch.object(test_assistant, "stream_query_rag", return_value=iter(["data: {\"type\": \"sources\", \"sources\": []}\n\n", "data: {\"type\": \"token\", \"content\": \"Testar svar\"}\n\n", "data: {\"type\": \"done\"}\n\n"])):
         response = client.post(
             "/ask",
             json={"question": "Vad handlar dokumentet om?"},
@@ -104,9 +104,9 @@ def test_ask_with_uploaded_document():
         )
 
         assert response.status_code == 200
-        data = response.json()
-        assert data["answer"] == "Testar svar"
-        assert "sources" in data
+        assert "text/event-stream" in response.headers.get("content-type", "")
+        content = response.text
+        assert "Testar svar" in content
 
 
 # ==========================================
