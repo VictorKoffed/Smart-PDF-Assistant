@@ -5,12 +5,14 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 ---
 
 ## 🚀 Funktioner
+## 🚀 Funktioner
 * **Lokal:** AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
 * **RAG-flöde:** Extraherar text från PDF:er med **PDFPlumber**, rensar texten med **Regex** och delar upp den i hanterbara textbitar (`chunk_size=2500`), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
-* **Konversationsminne:** Systemet minns tidigare frågor och svar i chatten, vilket gör det möjligt att ha en sammanhängande dialog kring det uppladdade dokumentet.
+* **AI-drivet Konversationsminne:** Systemet minns tidigare frågor och svar, men för att spara värdefullt VRAM och inte överskrida kontextfönstret, sammanfattar AI:n kontinuerligt äldre historik i bakgrunden.
+* **Realtids-streaming (SSE):** Svaren från AI-modellen strömmas ord för ord i realtid från FastAPI till React-klienten via Server-Sent Events, vilket ger en blixtsnabb och interaktiv känsla likt ChatGPT.
 * **Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare.
 * **Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
-* **UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka animeringar (t.ex. skräddarsydda "pop"-animationer, ljusgradienter när AI:n har färdigställt sitt svar samt laddnings animationer).
+* **Komponentdriven UX:** Frontend är byggt med en ren React-komponentarkitektur. Gränssnittet är inspirerat av moderna AI-plattformar med Markdown-stöd i realtid, automatisk scroll och mjuka CSS-animationer.
 * **Källhänvisningar:** Visar exakt vilka sidor och textstycken (chunks) som AI använt för att generera sitt svar, med möjlighet att expandera och läsa hela stycket.
 
 ---
