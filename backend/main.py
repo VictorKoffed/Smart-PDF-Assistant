@@ -14,6 +14,7 @@ import time
 import uuid
 import shutil
 import asyncio
+import re
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,6 +93,15 @@ def get_assistant(session_id: str):
     if not session_id:
         raise HTTPException(status_code=400, detail="Session-ID saknas.")
 
+    # =================================================================
+    # SÄKERHETSKONTROLL: Sanering av input (Förhindrar Path Traversal)
+    # -----------------------------------------------------------------
+    # Vi tillåter endast bokstäver, siffror och bindestreck. Om någon
+    # försöker skicka in "../" för att manipulera filsystemet stoppas det.
+    # =================================================================
+    if not re.match(r"^[a-zA-Z0-9-]+$", session_id):
+        raise HTTPException(status_code=400, detail="Ogiltigt format på Session-ID.")
+
     cleanup_old_sessions()
 
     if session_id not in active_sessions:
@@ -126,13 +136,6 @@ class QueryRequest(BaseModel):
 # ---------------------------------------------------------------------
 # Tar emot en fil från frontend, validerar formatet, identifierar
 # användarens session, sparar filen lokalt och startar RAG-processen.
-#
-# SÄKERHET OCH OPTIMERING:
-# - Filnamnet byts ut mot ett UUID för att förhindra Path Traversal och filkrockar.
-# - Använder shutil.copyfileobj för att spara filen effektivt utan att
-#   överbelasta serverns RAM-minne.
-# - Kör den tunga PDF-analysen i en separat tråd med asyncio.to_thread för
-#   att undvika att blockera FastAPIs event-loop.
 # =====================================================================
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(None)):
