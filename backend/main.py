@@ -10,6 +10,7 @@
 # =====================================================================
 
 import os
+import time
 import uuid
 import shutil
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header
@@ -61,6 +62,26 @@ app.add_middleware(
 active_sessions = {}
 
 
+def cleanup_old_sessions():
+    """
+    Rensar ut gamla sessioner och deras associerade mappar på disken
+    om de inte har varit aktiva på mer än 24 timmar (86400 sekunder).
+    """
+    now = time.time()
+    expired_sessions = [
+        s_id
+        for s_id, s_data in active_sessions.items()
+        if now - s_data["last_active"] > 86400
+    ]
+
+    for s_id in expired_sessions:
+        session_data = active_sessions.pop(s_id, None)
+        if session_data:
+            assistant = session_data["assistant"]
+            shutil.rmtree(assistant.upload_dir, ignore_errors=True)
+            shutil.rmtree(assistant.vector_db_dir, ignore_errors=True)
+
+
 def get_assistant(session_id: str):
     """
     Hämtar en existerande assistent för given session, eller skapar en ny
@@ -69,19 +90,28 @@ def get_assistant(session_id: str):
     if not session_id:
         raise HTTPException(status_code=400, detail="Session-ID saknas.")
 
+    cleanup_old_sessions()
+
     if session_id not in active_sessions:
         # Skapar unika mappar för just denna session för att isolera datan
         session_upload_dir = f"uploads/{session_id}"
         session_db_dir = f"./chroma_db/{session_id}"
 
-        active_sessions[session_id] = PDFDocumentAssistant(
+        assistant_obj = PDFDocumentAssistant(
             upload_dir=session_upload_dir,
             vector_db_dir=session_db_dir,
             ollama_host=OLLAMA_HOST,
             model_name=LLM_MODEL,
             embedding_model=EMBEDDING_MODEL
         )
-    return active_sessions[session_id]
+        active_sessions[session_id] = {
+            "assistant": assistant_obj,
+            "last_active": time.time()
+        }
+    else:
+        active_sessions[session_id]["last_active"] = time.time()
+
+    return active_sessions[session_id]["assistant"]
 
 
 # Pydantic-modell för inkommande frågor från klienten
