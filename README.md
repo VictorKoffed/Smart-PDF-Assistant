@@ -97,3 +97,18 @@ Systemet är designat för att vara flexibelt och kan köras på en och samma ma
 * **Roll:** Utveckling, klienthantering och API-routing.
 
 Denna uppdelning visar hur applikationen kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör skalning.
+
+---
+
+## 🐳 Driftsättning med Docker & Portainer (Produktion)
+
+Hela applikationen är containeriserad och redo att driftsättas direkt i en servermiljö med hjälp av `docker-compose.yml`.
+
+### Steg-för-steg via Portainer
+1. **Förberedelser:** Se till att du har Ollama körandes på en server och att den lyssnar på externa anrop (via `0.0.0.0`).
+2. **Skapa Stack:** Logga in i Portainer, navigera till **Stacks** och klicka på **Add stack**.
+3. **Importera kod:** Välj **Repository** som byggmetod och klistra in GitHub-länken till detta repo.
+4. **Miljövariabler:** Under sektionen för Environment variables, välj *Advanced mode* och definiera dina server-IPs dynamiskt (byt ut `<SERVER_IP>` mot din faktiska IP):
+   ```text
+   VITE_API_URL=http://<SERVER_IP>:5174
+   OLLAMA_BASE_URL=http://<SERVER_IP>:11434
