@@ -31,6 +31,9 @@ function SourceCard({ src }) {
 
             <div
                 onClick={() => isLong && setIsExpanded(!isExpanded)}
+                role="button"
+                tabIndex={isLong ? 0 : undefined}
+                onKeyDown={(e) => { if (isLong && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsExpanded(!isExpanded); } }}
                 className={`source-content ${isLong ? 'expandable' : ''}`}
                 title={isLong ? "Klicka för att visa/dölja hela texten" : ""}
             >
