@@ -13,6 +13,7 @@ import os
 import time
 import uuid
 import shutil
+import asyncio
 from fastapi import FastAPI, HTTPException, UploadFile, File, Header
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -130,6 +131,8 @@ class QueryRequest(BaseModel):
 # - Filnamnet byts ut mot ett UUID för att förhindra Path Traversal och filkrockar.
 # - Använder shutil.copyfileobj för att spara filen effektivt utan att
 #   överbelasta serverns RAM-minne.
+# - Kör den tunga PDF-analysen i en separat tråd med asyncio.to_thread för
+#   att undvika att blockera FastAPIs event-loop.
 # =====================================================================
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(None)):
@@ -155,8 +158,9 @@ async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(No
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Skicka filen vidare för uppdelning och indexering i vektordatabasen
-        assistant.process_pdf(file_path)
+        # Skicka filen vidare för uppdelning och indexering i vektordatabasen.
+        # Detta är en tung operation och KÖRS DÄRFÖR I EN SEPARAT TRÅD för att inte blockera servern.
+        await asyncio.to_thread(assistant.process_pdf, file_path)
 
         # Returnera originalnamnet i meddelandet så frontend kan visa det snyggt
         return {"message": f"Filen {file.filename} har bearbetats för sessionen!"}
