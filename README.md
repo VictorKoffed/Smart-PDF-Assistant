@@ -6,7 +6,8 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 
 ## 🚀 Funktioner
 * **Lokal:** AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
-* **RAG-flöde:** Delar upp PDF-dokument i hanterbara textbitar (chunks), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
+* **RAG-flöde:** Extraherar text från PDF:er med **PDFPlumber**, rensar texten med **Regex** och delar upp den i hanterbara textbitar (`chunk_size=2500`), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
+* **Konversationsminne:** Systemet minns tidigare frågor och svar i chatten, vilket gör det möjligt att ha en sammanhängande dialog kring det uppladdade dokumentet.
 * **Sessionshantering:** Använder unika session-IDs (UUID) och in-memory dictionaries för att hantera flera samtidiga användare.
 * **Filhantering:** Uppladdade filer döps om till kryptografiska UUIDs och skrivs till disk via optimerade streams (`shutil.copyfileobj`) för att förhindra "Path Traversal" och minnesläckor.
 * **UX:** Gränssnitt inspirerat av moderna AI-plattformar med Markdown-stöd, automatisk scroll samt mjuka animeringar (t.ex. skräddarsydda "pop"-animationer, ljusgradienter när AI:n har färdigställt sitt svar samt laddnings animationer).
@@ -54,38 +55,30 @@ Följ dessa steg för att köra projektet lokalt på din maskin.
    venv\Scripts\activate
    # Mac/Linux:
    source venv/bin/activate
+   ```
+3. Installera alla beroenden:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Konfigurera miljövariabler:
+   Kopiera mallen `.env.example` och skapa en ny fil med namnet `.env`. Anpassa IP-adresser och modellnamn efter din lokala setup.
+5. Starta servern:
+   ```bash
+   uvicorn main:app --reload
+   ```
 
-    Installera alla beroenden:
-    Bash
-
-    pip install -r requirements.txt
-
-    Konfigurera miljövariabler:
-    Kopiera mallen .env.example och skapa en ny fil med namnet .env. Anpassa IP-adresser och modellnamn efter din lokala setup.
-
-    Starta servern:
-    Bash
-
-    uvicorn main:app --reload
-
-2. Starta Frontend (React)
-
-    Öppna en ny terminal och navigera till mappen frontend/.
-
-    Installera alla beroenden:
-    Bash
-
-    npm install
-
-    Konfigurera miljövariabler:
-    Kopiera mallen .env.example och skapa en ny fil med namnet .env. Kontrollera att API-URL:en matchar din backend (standard är http://127.0.0.1:8000).
-
-    Starta klienten:
-    Bash
-
-    npm run dev
-
----
+### 2. Starta Frontend (React)
+1. Öppna en ny terminal och navigera till mappen `frontend/`.
+2. Installera alla beroenden:
+   ```bash
+   npm install
+   ```
+3. Konfigurera miljövariabler:
+   Kopiera mallen `.env.example` och skapa en ny fil med namnet `.env`. Kontrollera att API-URL:en matchar din backend (standard är `http://127.0.0.1:8000`).
+4. Starta klienten:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
@@ -103,6 +96,4 @@ Systemet är designat för att vara flexibelt och kan köras på en och samma ma
 * **Verktyg:** PyCharm (Backend) & WebStorm (Frontend)
 * **Roll:** Utveckling, klienthantering och API-routing.
 
-Denna uppdelning visar hur applikationen  kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör skalning.
-
----
+Denna uppdelning visar hur applikationen kan kommunicera med externa inferens-servrar över nätverket, vilket möjliggör skalning.
