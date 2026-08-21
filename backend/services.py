@@ -73,6 +73,7 @@ class PDFDocumentAssistant:
 
         # Lista för att spara enklare konversationshistorik (minne)
         self.chat_history: List[tuple] = []
+        self.conversation_summary: str = ""
 
     def clear_memory(self):
         """
@@ -80,11 +81,47 @@ class PDFDocumentAssistant:
         Körs automatiskt vid varje ny PDF-uppladdning.
         """
         self.chat_history.clear()
+        self.conversation_summary = ""
         self.vectorstore = None
         try:
             self.chroma_client.reset()
         except Exception as e:
             logger.warning(f"Kunde inte nollställa ChromaDB: {e}")
+
+    def _summarize_memory(self) -> None:
+        """
+        Skapar en sammanfattning av konversationshistoriken för att hålla
+        kontextfönstret litet och spara VRAM.
+        """
+        try:
+            history_str = ""
+            for q, a in self.chat_history:
+                history_str += f"Användare: {q}\nAI: {a}\n\n"
+
+            summary_prompt = f"""Sammanfatta följande konversation och tidigare sammanfattning på svenska i max 2-3 meningar.
+
+Tidigare sammanfattning:
+{self.conversation_summary}
+
+Ny konversation att inkludera:
+{history_str}
+
+Kort sammanfattning:"""
+
+            response = self.ollama_client.generate(
+                model=self.model_name,
+                prompt=summary_prompt
+            )
+            self.conversation_summary = response.get('response', '').strip()
+
+            # Behåll det absolut sista (senaste) meddelandeparet i listan
+            if self.chat_history:
+                last_pair = self.chat_history[-1]
+                self.chat_history = [last_pair]
+            else:
+                self.chat_history = []
+        except Exception as e:
+            logger.error(f"Fel vid sammanfattning av minne: {e}")
 
     def process_pdf(self, file_path: str) -> None:
         """
@@ -161,6 +198,10 @@ class PDFDocumentAssistant:
                 for q, a in self.chat_history[-3:]:
                     history_text += f"Användare: {q}\nAI: {a}\n\n"
 
+            summary_text = ""
+            if self.conversation_summary:
+                summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
+
             # Skapa den slutgiltiga prompten med strikta regler för AI-beteende på engelska
             # för att maximera modellens instruktionsföljsamhet, men tvinga svaret till svenska.
             # Notera: Indenteringen här är viktig i Python.
@@ -177,7 +218,7 @@ CRITICAL RULES:
 7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
 8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
 
-{history_text}
+{summary_text}{history_text}
 Here is the relevant text from the document:
 {context}
 
@@ -192,8 +233,8 @@ Answer in Swedish:"""
 
             answer = response.get('response', 'Inget svar genererades.')
             self.chat_history.append((question, answer))
-            if len(self.chat_history) > 10:
-                self.chat_history = self.chat_history[-10:]
+            if len(self.chat_history) >= 3:
+                self._summarize_memory()
 
             # Formatera källorna till en snygg struktur för frontend
             formatted_sources = [{"page": page, "content": content} for page, content in sources]

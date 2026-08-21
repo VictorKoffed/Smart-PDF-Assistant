@@ -124,21 +124,46 @@ def test_assistant_initialization():
     # Uppladdningsmappen ska nu innehålla sessions-id:t
     assert test_assistant.upload_dir == f"uploads/{TEST_SESSION_ID}"
     assert isinstance(test_assistant.chat_history, list)
+    assert test_assistant.conversation_summary == ""
 
 
 def test_clear_memory():
     """
-    Testar att konversationsminnet (chat_history) töms korrekt
+    Testar att konversationsminnet (chat_history och conversation_summary) töms korrekt
     när clear_memory-metoden anropas.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
     test_assistant.chat_history.clear()  # Töm listan först
     test_assistant.chat_history.append(("Fråga", "Svar"))
+    test_assistant.conversation_summary = "En tidigare sammanfattning"
     assert len(test_assistant.chat_history) == 1
 
     test_assistant.clear_memory()
     assert len(test_assistant.chat_history) == 0
+    assert test_assistant.conversation_summary == ""
+
+
+def test_summarize_memory():
+    """
+    Testar att _summarize_memory skapar en sammanfattning och behåller det sista meddelandeparet.
+    """
+    test_assistant = get_assistant(TEST_SESSION_ID)
+    test_assistant.chat_history = [
+        ("Fråga 1", "Svar 1"),
+        ("Fråga 2", "Svar 2"),
+        ("Fråga 3", "Svar 3")
+    ]
+    test_assistant.conversation_summary = "Tidigare sammanfattning."
+
+    test_assistant.ollama_client = MagicMock()
+    test_assistant.ollama_client.generate.return_value = {"response": "Ny sammanfattning."}
+
+    test_assistant._summarize_memory()
+
+    assert test_assistant.conversation_summary == "Ny sammanfattning."
+    assert len(test_assistant.chat_history) == 1
+    assert test_assistant.chat_history[0] == ("Fråga 3", "Svar 3")
 
 
 # ==========================================
