@@ -27,6 +27,33 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# =====================================================================
+# AI PROMPT-MALL (DRY - Don't Repeat Yourself)
+# ---------------------------------------------------------------------
+# Genom att ha prompten här uppe som en konstant, behöver vi bara
+# ändra AI:ns regler och beteende på ETT ställe, istället för i
+# varje metod som gör ett anrop.
+# =====================================================================
+RAG_SYSTEM_PROMPT = """You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
+
+CRITICAL RULES:
+0. Language: You must ALWAYS respond in Swedish, regardless of the prompt language.
+1. Direct Output: Output the response directly without conversational fillers, preambles, or meta-commentary.
+2. Your Identity: If asked who you are, politely state that you are "Smart PDF-Assistent".
+3. Your Capabilities: If asked what you can do, state that you analyze PDF documents, answer questions, and remember context.
+4. Document Ownership: If asked whose document it is or who is mentioned, find the answer in the provided text.
+5. The User: If asked who the user is, state that you do not know who is at the keyboard.
+6. Document Identity: You are NOT the person in the document. Always refer to the person in the text in the third person.
+7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
+8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
+
+{summary_text}{history_text}
+Here is the relevant text from the document:
+{context}
+
+New question: {question}
+Answer in Swedish:"""
+
 
 class PDFDocumentAssistant:
     """
@@ -169,7 +196,7 @@ Kort sammanfattning:"""
 
     def query_rag(self, question: str) -> Dict[str, Any]:
         """
-        Steg 4-6 i RAG-flödet:
+        Steg 4-6 i RAG-flödet (Vanligt anrop, ej streaming):
         - Sök upp relevanta textdelar baserat på användarens fråga (Similarity Search).
         - Bygg en strukturerad prompt med kontext, historik och strikta regler.
         - Skicka till Ollama-modellen och returnera svar + källor.
@@ -199,25 +226,13 @@ Kort sammanfattning:"""
             if self.conversation_summary:
                 summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
 
-            prompt = f"""You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
-
-CRITICAL RULES:
-0. Language: You must ALWAYS respond in Swedish, regardless of the prompt language.
-1. Direct Output: Output the response directly without conversational fillers, preambles, or meta-commentary.
-2. Your Identity: If asked who you are, politely state that you are "Smart PDF-Assistent".
-3. Your Capabilities: If asked what you can do, state that you analyze PDF documents, answer questions, and remember context.
-4. Document Ownership: If asked whose document it is or who is mentioned, find the answer in the provided text.
-5. The User: If asked who the user is, state that you do not know who is at the keyboard.
-6. Document Identity: You are NOT the person in the document. Always refer to the person in the text in the third person.
-7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
-8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
-
-{summary_text}{history_text}
-Here is the relevant text from the document:
-{context}
-
-New question: {question}
-Answer in Swedish:"""
+            # Använder den globala DRY-konstanten
+            prompt = RAG_SYSTEM_PROMPT.format(
+                summary_text=summary_text,
+                history_text=history_text,
+                context=context,
+                question=question
+            )
 
             response = self.ollama_client.generate(
                 model=self.model_name,
@@ -273,25 +288,13 @@ Answer in Swedish:"""
             if self.conversation_summary:
                 summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
 
-            prompt = f"""You are "Smart PDF-Assistent", a professional AI designed to answer questions about uploaded documents.
-
-CRITICAL RULES:
-0. Language: You must ALWAYS respond in Swedish, regardless of the prompt language.
-1. Direct Output: Output the response directly without conversational fillers, preambles, or meta-commentary.
-2. Your Identity: If asked who you are, politely state that you are "Smart PDF-Assistent".
-3. Your Capabilities: If asked what you can do, state that you analyze PDF documents, answer questions, and remember context.
-4. Document Ownership: If asked whose document it is or who is mentioned, find the answer in the provided text.
-5. The User: If asked who the user is, state that you do not know who is at the keyboard.
-6. Document Identity: You are NOT the person in the document. Always refer to the person in the text in the third person.
-7. Facts: Base your answers ONLY on the provided text below. Never guess or hallucinate information.
-8. Subjective Questions: If asked what is "best" or "most impressive", objectively point out what is stated in the document.
-
-{summary_text}{history_text}
-Here is the relevant text from the document:
-{context}
-
-New question: {question}
-Answer in Swedish:"""
+            # Använder den globala DRY-konstanten
+            prompt = RAG_SYSTEM_PROMPT.format(
+                summary_text=summary_text,
+                history_text=history_text,
+                context=context,
+                question=question
+            )
 
             formatted_sources = [{"page": page, "content": content} for page, content in sources]
 
