@@ -4,14 +4,14 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
 
   frontend:
     build: ./frontend
     ports:
-      - "5173:5173"
+      - "5174:5173"
     depends_on:
       - backend
     environment:
