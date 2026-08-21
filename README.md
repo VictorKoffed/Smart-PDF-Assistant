@@ -5,7 +5,7 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 ---
 
 ## 🚀 Funktioner
-## 🚀 Funktioner
+
 * **Lokal:** AI-bearbetning sker lokalt utan att data skickas till externa molntjänster.
 * **RAG-flöde:** Extraherar text från PDF:er med **PDFPlumber**, rensar texten med **Regex** och delar upp den i hanterbara textbitar (`chunk_size=2500`), skapar embeddings och sparar i en persistent vektordatabas (**ChromaDB**).
 * **AI-drivet Konversationsminne:** Systemet minns tidigare frågor och svar, men för att spara värdefullt VRAM och inte överskrida kontextfönstret, sammanfattar AI:n kontinuerligt äldre historik i bakgrunden.
