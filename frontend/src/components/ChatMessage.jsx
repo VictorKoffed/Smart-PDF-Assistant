@@ -1,0 +1,105 @@
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+
+// =====================================================================
+// KOMPONENT: KÄLLHÄNVISNINGSKORT
+// =====================================================================
+function SourceCard({ src }) {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const isLong = src.content.length > 200
+
+    return (
+        <div className="source-card">
+            <div className="source-header">
+                <span className="source-tag">
+                    {src.page.toUpperCase()}
+                </span>
+            </div>
+
+            <div
+                onClick={() => isLong && setIsExpanded(!isExpanded)}
+                role="button"
+                tabIndex={isLong ? 0 : undefined}
+                onKeyDown={(e) => { if (isLong && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsExpanded(!isExpanded); } }}
+                className={`source-content ${isLong ? 'expandable' : ''}`}
+                title={isLong ? "Klicka för att visa/dölja hela texten" : ""}
+            >
+                <span className="source-text">
+                    "{isExpanded || !isLong ? src.content : src.content.substring(0, 200) + '...'}"
+                </span>
+                {isLong && (
+                    <span className="source-expand-btn">
+                        {isExpanded ? '[ Fäll ihop ]' : '[ Visa hela chunken ]'}
+                    </span>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// =====================================================================
+// KOMPONENT: ENSKILT CHATTMEDDELANDE
+// =====================================================================
+export default function ChatMessage({ msg, isFinishedAiResponse }) {
+    const isLongUserMessage = msg.role === 'user' && msg.text.length > 250;
+
+    return (
+        <div className={`message-wrapper ${msg.role}`}>
+            <div className={`message-bubble ${msg.role} ${isFinishedAiResponse ? 'ai-pop-animation' : ''}`}>
+                {msg.role === 'ai' && <strong className="message-sender">Smart PDF-Assistent</strong>}
+
+                {isLongUserMessage ? (
+                    <details className="msg-details">
+                        <summary className="msg-summary">
+                            <span>{msg.text.substring(0, 100)}...</span>
+                            <span className="msg-expand-hint">[ Visa hela ditt meddelande ]</span>
+                        </summary>
+                        <div className="msg-expanded-text">
+                            {msg.text}
+                        </div>
+                    </details>
+                ) : (
+                    <div className={msg.isTemp ? 'msg-temp' : ''}>
+                        {msg.role === 'ai' && !msg.isTemp ? (
+                            <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        ) : (
+                            <span>
+                                {msg.text}
+                                {msg.isThinking && (
+                                    <span>
+                                        <span className="dot-1">.</span>
+                                        <span className="dot-2">.</span>
+                                        <span className="dot-3">.</span>
+                                    </span>
+                                )}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {/* KÄLLHÄNVISNINGAR MED UNIKA SIDOR */}
+                {msg.sources && msg.sources.length > 0 && !msg.isTemp && (() => {
+                    const uniqueSources = Array.from(
+                        new Map(msg.sources.map(src => [src.page, src])).values()
+                    );
+
+                    return (
+                        <div className="sources-container">
+                            <details className="sources-details">
+                                <summary className="sources-summary">
+                                    <span>🔍 Källor från dokumentet ({uniqueSources.length} {uniqueSources.length === 1 ? 'sida' : 'sidor'})</span>
+                                </summary>
+
+                                <div className="sources-list">
+                                    {uniqueSources.map((src, sIndex) => (
+                                        <SourceCard key={sIndex} src={src} />
+                                    ))}
+                                </div>
+                            </details>
+                        </div>
+                    );
+                })()}
+            </div>
+        </div>
+    );
+}
