@@ -18,7 +18,7 @@ from chromadb.config import Settings
 
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Konfigurera loggning för felsökning och spårning
@@ -96,11 +96,14 @@ class PDFDocumentAssistant:
         try:
             try:
                 # 1. Läs in PDF-dokumentet sida för sida
-                loader = PyPDFLoader(file_path)
+                loader = PDFPlumberLoader(file_path)
                 docs = loader.load()
 
                 if not docs:
                     raise ValueError("PDF-filen verkar vara tom eller kunde inte läsas.")
+
+                for doc in docs:
+                    doc.page_content = doc.page_content.replace("\n", " ").strip()
 
                 # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
                 text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
