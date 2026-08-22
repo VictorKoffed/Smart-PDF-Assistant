@@ -319,7 +319,7 @@ Kort sammanfattning:"""
                 stream=True,
                options={
                     "num_ctx": 8192,      # Ökar kontextfönstret (minnet för prompt + dokument). Standard är ofta 2048.
-                    "num_predict": 2048   # Ökar maxlängden på det genererade svaret.
+                    "num_predict": -1   # Ökar maxlängden på det genererade svaret. (-1=oändligt)
                 }
             )
 
