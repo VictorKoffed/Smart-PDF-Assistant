@@ -141,7 +141,11 @@ Kort sammanfattning:"""
 
             response = self.ollama_client.generate(
                 model=self.model_name,
-                prompt=summary_prompt
+                prompt=summary_prompt,
+               options={
+                    "num_ctx": 4096,
+                    "num_predict": 512  # Sammanfattningar behöver inte vara så långa
+                }
             )
             self.conversation_summary = response.get('response', '').strip()
 
@@ -239,7 +243,11 @@ Kort sammanfattning:"""
 
             response = self.ollama_client.generate(
                 model=self.model_name,
-                prompt=prompt
+                prompt=prompt,
+               options={
+                    "num_ctx": 4096,
+                    "num_predict": 1024
+                }
             )
 
             answer = response.get('response', 'Inget svar genererades.')
@@ -307,7 +315,11 @@ Kort sammanfattning:"""
             stream = self.ollama_client.generate(
                 model=self.model_name,
                 prompt=prompt,
-                stream=True
+                stream=True,
+               options={
+                    "num_ctx": 4096,      # Ökar kontextfönstret (minnet för prompt + dokument). Standard är ofta 2048.
+                    "num_predict": 1024   # Ökar maxlängden på det genererade svaret.
+                }
             )
 
             full_answer = ""
