@@ -116,3 +116,9 @@ Hela applikationen är containeriserad och redo att driftsättas direkt i en ser
    OLLAMA_BASE_URL=http://<SERVER_IP>:11434
    LLM_MODEL=gemma4:e4b
    EMBEDDING_MODEL=bge-m3
+
+---
+
+ToDo
+1. fixa inskrvningsrutan dynmiskt kan bli större nör man skriver in mer text.
+2. fixa så att sidan ser bra ut på mobilen.
