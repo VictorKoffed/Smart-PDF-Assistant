@@ -58,7 +58,7 @@ CRITICAL RULES:
 --- DOCUMENT CONTEXT END ---
 
 New question: {question}
-Answer:
+Answer:"""
 
 class PDFDocumentAssistant:
     """
