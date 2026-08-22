@@ -73,7 +73,7 @@ class PDFDocumentAssistant:
         embedding_model: str,
         chunk_size: int = 2500,
         chunk_overlap: int = 250,
-        k: int = 6
+        k: int = 3
     ):
         self.upload_dir = upload_dir
         self.vector_db_dir = vector_db_dir
@@ -317,8 +317,8 @@ Kort sammanfattning:"""
                 prompt=prompt,
                 stream=True,
                options={
-                    "num_ctx": 4096,      # Ökar kontextfönstret (minnet för prompt + dokument). Standard är ofta 2048.
-                    "num_predict": 1024   # Ökar maxlängden på det genererade svaret.
+                    "num_ctx": 8192,      # Ökar kontextfönstret (minnet för prompt + dokument). Standard är ofta 2048.
+                    "num_predict": 2048   # Ökar maxlängden på det genererade svaret.
                 }
             )
 
