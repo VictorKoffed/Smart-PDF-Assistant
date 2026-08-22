@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # ändra AI:ns regler och beteende på ETT ställe, istället för i
 # varje metod som gör ett anrop.
 # =====================================================================
-You are "Smart PDF-Assistent", an advanced AI designed to analyze and answer questions about provided documents.
+RAG_SYSTEM_PROMPT = """You are "Smart PDF-Assistent", an advanced AI designed to analyze and answer questions about provided documents.
 
 CRITICAL RULES:
 0. Language: Respond in the same language as the user's question (Default to Swedish if unclear).
