@@ -122,3 +122,4 @@ Hela applikationen är containeriserad och redo att driftsättas direkt i en ser
 ToDo
 1. fixa inskrvningsrutan dynmiskt kan bli större nör man skriver in mer text.
 2. fixa så att sidan ser bra ut på mobilen.
+3. fixa backend error mess, exempel laddas fel bild så får man medellande körs backend.
