@@ -3,17 +3,22 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
 // =====================================================================
-// KOMPONENT: CHATT-BEHÅLLARE & SIDFOT
+// KOMPONENT: CHAT CONTAINER (Konversationsvy)
+// ---------------------------------------------------------------------
+// Huvudbehållare för själva chatten. Hanterar den automatiska scroll-logiken
+// (så att användaren inte fastnar längst ner om de scrollar upp för att läsa
+// historik) samt integrerar inmatning och dokumentbyten i sidfoten.
 // =====================================================================
 export default function ChatContainer({
                                           messages, question, setQuestion, askAI, isAsking,
                                           loadedFileName, file, handleFileChange, uploadPDF
                                       }) {
     const chatEndRef = useRef(null);
-
     const chatContainerRef = useRef(null);
     const isScrolledUp = useRef(false);
 
+    // UX: Identifierar om användaren har scrollat upp i historiken för att
+    // undvika att tvinga ner dem till botten mitt i läsningen när nya tokens strömmar in.
     const handleScroll = () => {
         if (!chatContainerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -25,6 +30,7 @@ export default function ChatContainer({
         }
     };
 
+    // Auto-scrolla till botten vid nya meddelanden (förutsatt att man inte läser historik)
     useEffect(() => {
         if (!isScrolledUp.current) {
             chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,13 +45,9 @@ export default function ChatContainer({
                 onScroll={handleScroll}
             >
                 {messages.map((msg, index) => {
-                    // =====================================================================
-                    // ANIMATIONS-LOGIK (React Reconciliation)
-                    // ---------------------------------------------------------------------
-                    // Genom att dynamiskt byta 'key' när meddelandet går från temporärt
-                    // ("Tänker...") Till färdigt svar, tvingar vi React att radera den gamla
-                    // bubblan och rendera en helt ny. Detta gör att CSS-animationen spelas upp!
-                    // =====================================================================
+                    // REACT RECONCILIATION: Genom att dynamiskt styra nyckeln triggar vi
+                    // en ren omrendering när AI:n går från "Tänker..." till färdigt svar,
+                    // vilket krävs för att köra CSS-pop-animationen snyggt.
                     const messageKey = msg.isTemp ? `temp-${index}` : `msg-${index}`;
                     const isFinishedAiResponse = msg.role === 'ai' && !msg.isTemp;
 
@@ -67,7 +69,7 @@ export default function ChatContainer({
                 isAsking={isAsking}
             />
 
-            {/* SIDFOT MED DOKUMENTBYTE */}
+            {/* Sidfot som visar aktiv kontext och ger möjlighet att byta dokument */}
             <div className="footer">
                 <div>
                     <span className="footer-hint">Aktuellt dokument: </span>
@@ -76,12 +78,6 @@ export default function ChatContainer({
 
                 <div className="footer-actions">
                     <span className="footer-hint">Vill du byta?</span>
-                    {/* =====================================================================
-                        UX-FÖRBÄTTRING: Anpassad filväljare
-                        ---------------------------------------------------------------------
-                        Vi döljer webbläsarens standardknapp och använder en label som
-                        fungerar som en klickbar länk istället för ett mycket renare UI.
-                    ===================================================================== */}
                     <label className="footer-file-label">
                         <span className="footer-file-custom-btn">📁 Välj ny fil</span>
                         <input
