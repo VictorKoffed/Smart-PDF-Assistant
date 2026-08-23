@@ -302,6 +302,7 @@
   background-color: var(--panel-bg);
   border: 1px solid var(--border);
   border-top: none;
+  align-items: flex-end;
 }
 
 /* UX: Stöd för dynamisk höjdökning via JS och säkerställer god läsbarhet */
