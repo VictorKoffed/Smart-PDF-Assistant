@@ -1,11 +1,14 @@
 # =====================================================================
 # TJÄNSTKLASS FÖR PDF OCH RAG-LOGIK (services.py)
 # ---------------------------------------------------------------------
-# Denna fil hanterar kärnlogiken för projektet:
-# - Läsa in och stycka upp PDF-dokument.
-# - Skapa och hantera vektordatabasen (ChromaDB) med embeddings.
-# - Styra konversationsminne och promptbyggande.
-# - Kommunicera med lokal AI-modell via Ollama.
+# Denna fil utgör kärnmotorn (The Brain) för applikationen och 
+# implementerar Retrieval-Augmented Generation (RAG)-arkitekturen:
+# - Dokumentbearbetning: Extrahering, textdelning (chunking) och 
+#   vektorisering (embeddings) till en lokal ChromaDB.
+# - Konversationsminne: Hantering och intelligent sammanfattning av 
+#   chatthistorik för att spara VRAM och hålla kontextfönstret optimalt.
+# - AI-generering: Sökning efter relevanta textdelar (Similarity Search)
+#   och kommunikation med lokal LLM via Ollama (med stöd för SSE-streaming).
 # =====================================================================
 
 import os
@@ -23,16 +26,16 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Konfigurera loggning för felsökning och spårning
+# Konfigurera loggning för spårning och felsökning i produktion/utveckling
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # =====================================================================
 # AI PROMPT-MALL (DRY - Don't Repeat Yourself)
 # ---------------------------------------------------------------------
-# Genom att ha prompten här uppe som en konstant, behöver vi bara
-# ändra AI:ns regler och beteende på ETT ställe, istället för i
-# varje metod som gör ett anrop.
+# Arkitektoniskt beslut: Genom att centralisera systemprompten som en
+# konstant säkerställs enhetligt beteende, strikt faktatrogenhet och 
+# prompt injection-skydd på ett enda ställe för alla AI-anrop.
 # =====================================================================
 RAG_SYSTEM_PROMPT = """You are an advanced, strictly factual AI assistant ("Smart PDF-Assistent") designed to analyze and answer questions based on provided documents.
 
@@ -59,8 +62,8 @@ Answer:"""
 
 class PDFDocumentAssistant:
     """
-    Huvudklass som samlar all funktionalitet för dokumenthantering,
-    vektorsökning och AI-generering.
+    Huvudklass som inkapslar all affärslogik för dokumenthantering,
+    vektorsökning (ChromaDB) och interaktion med den lokala AI-modellen.
     """
 
     def __init__(
@@ -83,32 +86,33 @@ class PDFDocumentAssistant:
         self.chunk_overlap = chunk_overlap
         self.k = k
 
-        # Håller reda på om en aktiv vektordatabas/dokument finns inläst
+        # Tillståndshantering för den aktiva sessionens vektordatabas
         self.vectorstore = None
 
-        # Säkerställ att mappen för uppladdade filer existerar lokalt
+        # Säkerställ att den sessionsspecifika mappen existerar på disk
         os.makedirs(self.upload_dir, exist_ok=True)
 
         try:
-            # Initiera persistent ChromaDB-klient för att spara vektorer på disk
+            # Initierar en persistent ChromaDB-klient för att spara vektorer på disk
             self.chroma_client = chromadb.PersistentClient(
                 path=self.vector_db_dir,
                 settings=Settings(allow_reset=True)
             )
-            # Initiera Ollama-klienten med angiven host-adress
+            # Initierar anslutningen till den lokala Ollama-instansen
             self.ollama_client = ollama.Client(host=self.ollama_host)
         except Exception as e:
             logger.error(f"Kunde inte initiera databas eller Ollama-klient: {e}")
             raise
 
-        # Lista för att spara enklare konversationshistorik (minne)
+        # Tillstånd för konversationsminne (buffer och summerad kontext)
         self.chat_history: List[tuple] = []
         self.conversation_summary: str = ""
 
     def clear_memory(self):
         """
-        Rensar konversationsminnet och tömmer vektordatabasen helt.
-        Körs automatiskt vid varje ny PDF-uppladdning.
+        Nollställer sessionens minne och tömmer vektordatabasen helt.
+        Körs automatiskt vid varje ny dokumentuppladdning för att 
+        garantera att data inte läcker mellan olika dokument.
         """
         self.chat_history.clear()
         self.conversation_summary = ""
@@ -120,8 +124,9 @@ class PDFDocumentAssistant:
 
     def _summarize_memory(self) -> None:
         """
-        Skapar en sammanfattning av konversationshistoriken för att hålla
-        kontextfönstret litet och spara VRAM.
+        Minnesoptimering (Rolling Summary):
+        För att förhindra att kontextfönstret växer okontrollerat och slukar VRAM 
+        komprimeras äldre konversationer till en sammanfattning via AI-modellen.
         """
         try:
             history_str = ""
@@ -143,12 +148,12 @@ Kort sammanfattning:"""
                 prompt=summary_prompt,
                options={
                     "num_ctx": 4096,
-                    "num_predict": 512  # Sammanfattningar behöver inte vara så långa
+                    "num_predict": 512
                 }
             )
             self.conversation_summary = response.get('response', '').strip()
 
-            # Behåll det absolut sista (senaste) meddelandeparet i listan
+            # Sparar enbart det senaste interaktionsparet i råformat, resten bärs av sammanfattningen
             if self.chat_history:
                 last_pair = self.chat_history[-1]
                 self.chat_history = [last_pair]
@@ -159,15 +164,14 @@ Kort sammanfattning:"""
 
     def process_pdf(self, file_path: str) -> None:
         """
-        Steg 1-3 i RAG-flödet:
-        - Läser in PDF-filen.
-        - Delar upp texten i hanterbara bitar (chunks).
-        - Skapar embeddings och sparar ner dem i ChromaDB.
-        - Raderar filen från filsystemet när den bearbetats.
+        Inläsningspipeline för dokument (ETL-process):
+        1. Extraherar text från PDF via pdfplumber.
+        2. Validerar att dokumentet innehåller läsbar text (skydd mot tomma/skannade bild-PDF:er).
+        3. Delar upp texten i hanterbara segment (chunks) med överlappning.
+        4. Genererar embeddings och indexerar dem i ChromaDB.
         """
         try:
             try:
-                # 1. Läs in PDF-dokumentet sida för sida
                 loader = PDFPlumberLoader(file_path)
                 docs = loader.load()
 
@@ -181,24 +185,23 @@ Kort sammanfattning:"""
                 if not combined_text.strip():
                     raise ValueError("PDF-filen saknar läsbar text eller verkar vara en skannad bild.")
 
-                # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
                 text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
                 splits = text_splitter.split_documents(docs)
 
-                # 3. Skapa vektorer (embeddings) och spara i ChromaDB samt sätt vectorstore
                 self.vectorstore = Chroma.from_documents(
                     client=self.chroma_client,
                     documents=splits,
                     embedding=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
                 )
             finally:
+                # Säkerhetsåtgärd: Rensa alltid bort den temporära filen från disk oavsett utfall
                 if os.path.exists(file_path):
                     os.remove(file_path)
         except FileNotFoundError as e:
             logger.error(f"Filen hittades inte: {e}")
             raise RuntimeError(f"Kunde inte hitta PDF-dokumentet: {str(e)}")
         except ValueError as e:
-            logger.error(f"Valideringsfel vid bearbetning av PDF: {e}")
+            logger.warning(f"Valideringsfel vid bearbetning av PDF: {e}")
             raise RuntimeError(str(e))
         except Exception as e:
             logger.error(f"Fel vid bearbetning av PDF: {e}")
@@ -206,10 +209,9 @@ Kort sammanfattning:"""
 
     def query_rag(self, question: str) -> Dict[str, Any]:
         """
-        Steg 4-6 i RAG-flödet (Vanligt anrop, ej streaming):
-        - Sök upp relevanta textdelar baserat på användarens fråga (Similarity Search).
-        - Bygg en strukturerad prompt med kontext, historik och strikta regler.
-        - Skicka till Ollama-modellen och returnera svar + källor.
+        Synkron RAG-frågeställning:
+        Sök upp relevanta textdelar via semantisk likhet (Similarity Search),
+        konstruera prompten med historik och kontext, och returnera det slutgiltiga svaret.
         """
         try:
             if not self.vectorstore:
@@ -236,7 +238,6 @@ Kort sammanfattning:"""
             if self.conversation_summary:
                 summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
 
-            # Använder den globala DRY-konstanten
             prompt = RAG_SYSTEM_PROMPT.format(
                 summary_text=summary_text,
                 history_text=history_text,
@@ -274,8 +275,9 @@ Kort sammanfattning:"""
 
     def stream_query_rag(self, question: str) -> Generator[str, None, None]:
         """
-        Streaming-variant av query_rag som skickar källor först och därefter
-        genererar svarstokens via SSE (Server-Sent Events).
+        Asynkron Streaming RAG-pipeline (Server-Sent Events / SSE):
+        Optimerar upplevelsen genom att först extrahera och skicka källhänvisningar,
+        för att därefter strömma ut genererade tokens i realtid direkt från modellen.
         """
         try:
             if not self.vectorstore:
@@ -302,7 +304,6 @@ Kort sammanfattning:"""
             if self.conversation_summary:
                 summary_text = f"Tidigare sammanfattad kontext:\n{self.conversation_summary}\n\n"
 
-            # Använder den globala DRY-konstanten
             prompt = RAG_SYSTEM_PROMPT.format(
                 summary_text=summary_text,
                 history_text=history_text,
@@ -312,7 +313,7 @@ Kort sammanfattning:"""
 
             formatted_sources = [{"page": page, "content": content} for page, content in sources]
 
-            # Skicka källor först
+            # Arkitektoniskt mönster: Skicka metadata (källor) till klienten först via SSE
             yield f"data: {json.dumps({'type': 'sources', 'sources': formatted_sources})}\n\n"
 
             stream = self.ollama_client.generate(
@@ -320,8 +321,8 @@ Kort sammanfattning:"""
                 prompt=prompt,
                 stream=True,
                options={
-                    "num_ctx": 8192,      # Ökar kontextfönstret (minnet för prompt + dokument). Standard är ofta 2048.
-                    "num_predict": -1   # Ökar maxlängden på det genererade svaret. (-1=oändligt)
+                    "num_ctx": 8192,
+                    "num_predict": -1
                 }
             )
 
