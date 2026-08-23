@@ -18,8 +18,7 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 ---
 
 ### 🎬 Demo
-> Se systemet streama svar och hämta källor i realtid.
-[Klicka här för att spela upp demon](https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a)
+https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a
 
 ---
 
