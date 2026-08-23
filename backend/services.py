@@ -171,6 +171,10 @@ Kort sammanfattning:"""
                 for doc in docs:
                     doc.page_content = re.sub(r"\s+", " ", doc.page_content).strip()
 
+                combined_text = "".join([doc.page_content for doc in docs])
+                if not combined_text.strip():
+                    raise ValueError("PDF-filen saknar läsbar text eller verkar vara en skannad bild.")
+
                 # 2. Dela upp texten i mindre bitar för att passa modellens kontextfönster
                 text_splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
                 splits = text_splitter.split_documents(docs)
@@ -189,10 +193,10 @@ Kort sammanfattning:"""
             raise RuntimeError(f"Kunde inte hitta PDF-dokumentet: {str(e)}")
         except ValueError as e:
             logger.error(f"Valideringsfel vid bearbetning av PDF: {e}")
-            raise RuntimeError(f"Ogiltigt PDF-dokument: {str(e)}")
+            raise RuntimeError(str(e))
         except Exception as e:
             logger.error(f"Fel vid bearbetning av PDF: {e}")
-            raise RuntimeError(f"Kunde inte bearbeta PDF-dokumentet: {str(e)}")
+            raise RuntimeError("Kunde inte bearbeta PDF-dokumentet.")
 
     def query_rag(self, question: str) -> Dict[str, Any]:
         """
