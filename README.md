@@ -17,6 +17,11 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 
 ---
 
+### 🎬 Demo
+[Screencast_20260823_165920.webm](https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a)
+
+---
+
 ## 📸 Skärmdumpar
 
 ### Uppladdningsvy
