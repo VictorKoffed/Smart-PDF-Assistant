@@ -66,6 +66,25 @@ def test_upload_valid_pdf_success():
         assert "har bearbetats" in response.json()["message"]
 
 
+def test_upload_process_pdf_runtime_error():
+    """
+    Testar att om process_pdf kastar ett RuntimeError (t.ex. vid skannad eller tom PDF),
+    så svarar /upload endpointen med 400 Bad Request och felmeddelandet.
+    """
+    test_assistant = get_assistant(TEST_SESSION_ID)
+
+    with patch.object(test_assistant, "process_pdf", side_effect=RuntimeError("PDF-filen saknar läsbar text eller verkar vara en skannad bild.")), patch.object(test_assistant, "clear_memory"):
+        pdf_bytes = "%PDF-1.4 tom pdf...".encode("utf-8")
+        response = client.post(
+            "/upload",
+            files={"file": ("empty.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
+            headers={"X-Session-ID": TEST_SESSION_ID}
+        )
+
+        assert response.status_code == 400
+        assert "saknar läsbar text" in response.json()["detail"]
+
+
 def test_ask_without_uploaded_document():
     """
     Testar att /ask endpointen stoppar förfrågningar (returnerar felkod)
