@@ -18,7 +18,8 @@ En lokal AI-applikation för dokumentanalys (RAG - Retrieval-Augmented Generatio
 ---
 
 ### 🎬 Demo
-[Screencast_20260823_165920.webm](https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a)
+> Se systemet streama svar och hämta källor i realtid.
+[Klicka här för att spela upp demon](https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a)
 
 ---
 
@@ -124,5 +125,6 @@ Hela applikationen är containeriserad och redo att driftsättas direkt i en ser
 
 ---
 
-ToDo
-1. 
+## 📝 ToDo / Framtida förbättringar
+- [ ] **SQL-databas:** Integrera PostgreSQL (via SQLAlchemy) för beständig lagring av användarsessioner och dokumentmetadata.
+- [ ] **Fler format:** Bygga ut dokumentladdaren (LangChain Document Loaders) för att stödja `.docx` och `.txt`. 
