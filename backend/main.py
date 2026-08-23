@@ -167,6 +167,8 @@ async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(No
 
         # Returnera originalnamnet i meddelandet så frontend kan visa det snyggt
         return {"message": f"Filen {file.filename} har bearbetats för sessionen!"}
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
