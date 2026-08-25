@@ -1,6 +1,53 @@
 # 📄 Smart PDF-Assistent
 
-En lokal AI-applikation för dokumentanalys med **RAG (Retrieval-Augmented Generation)**. Applikationen låter användaren ladda upp PDF-filer och ställa frågor om innehållet. AI-bearbetningen sker lokalt med hjälp av **Ollama**, medan backend och frontend hanterar dokument, sökningar och användargränssnitt.
+En lokal AI-applikation för dokumentanalys med **RAG (Retrieval-Augmented Generation)**. Applikationen låter användaren ladda upp PDF-filer och ställa frågor om innehållet. AI-bearbetningen körs lokalt inom den egna infrastrukturen med hjälp av
+**Ollama**, medan backend och frontend hanterar dokument, sökningar och
+användargränssnitt.
+
+---
+
+## 📑 Innehåll
+
+- [Projektbakgrund](#-projektbakgrund)
+- [Funktioner](#-funktioner)
+- [Demo](#-demo)
+- [Skärmdumpar](#-skärmdumpar)
+- [Teknikstack](#️-teknikstack)
+- [Arkitektur](#️-arkitektur)
+- [RAG-flöde](#-rag-flöde)
+- [Installation & Start](#️-installation--start)
+- [Utvecklingsmiljö](#-utvecklingsmiljö)
+- [Driftsättning med Docker & Portainer](#-driftsättning-med-docker--portainer)
+- [Filhantering och sessionshantering](#-filhantering-och-sessionshantering)
+- [Säkerhet & integritet](#-säkerhet--integritet)
+- [Realtidskommunikation](#-realtidskommunikation)
+- [Källhänvisningar](#-källhänvisningar)
+- [Projektstruktur](#-projektstruktur)
+- [Framtida utveckling](#-framtida-utveckling)
+- [Begränsningar](#️-begränsningar)
+- [License](#-license)
+- [AI-assistans och kodgenerering](#-ai-assistans-och-kodgenerering)
+
+---
+
+## 🎯 Projektbakgrund
+
+Detta projekt utvecklades på fritiden som ett eget tekniskt projekt med
+fokus på lokal AI, RAG och fullstack-utveckling.
+
+Syftet var att utforska hur moderna AI-komponenter kan kombineras med en
+egen backend och frontend för att skapa en praktisk applikation för
+dokumentanalys.
+
+Projektet har framför allt fungerat som ett sätt att fördjupa kunskaper inom:
+
+- RAG och semantisk sökning.
+- LLM och embeddings.
+- Lokal AI-inferens med Ollama.
+- FastAPI och backend-utveckling.
+- React och frontend-utveckling.
+- Docker och serverdrift.
+- Kommunikation mellan separata tjänster.
 
 ---
 
@@ -16,28 +63,6 @@ En lokal AI-applikation för dokumentanalys med **RAG (Retrieval-Augmented Gener
 - **React-baserat gränssnitt** – Komponentbaserad frontend med Markdown-stöd, automatisk scrollning och CSS-animationer.
 - **Källhänvisningar** – Visar vilka sidor och textbitar som använts som underlag för AI-svaret.
 - **Expanderbara källor** – Användaren kan öppna källhänvisningarna och läsa hela det relevanta textstycket.
-
----
-
-## 📑 Innehåll
-
-- [Funktioner](#-funktioner)
-- [Demo](#-demo)
-- [Skärmdumpar](#-skärmdumpar)
-- [Teknikstack](#️-teknikstack)
-- [Arkitektur](#️-arkitektur)
-- [RAG-flöde](#-rag-flöde)
-- [Installation & Start](#️-installation--start)
-- [Utvecklingsmiljö](#-utvecklingsmiljö)
-- [Driftsättning med Docker & Portainer](#-driftsättning-med-docker--portainer)
-- [Filhantering och sessionshantering](#-filhantering-och-sessionshantering)
-- [Realtidskommunikation](#-realtidskommunikation)
-- [Källhänvisningar](#-källhänvisningar)
-- [Projektstruktur](#-projektstruktur)
-- [ToDo / Framtida förbättringar](#-todo--framtida-förbättringar)
-- [Begränsningar](#️-begränsningar)
-- [License](#-license)
-- [AI-assistans och kodgenerering](#-ai-assistans-och-kodgenerering)
 
 ---
 
@@ -71,7 +96,7 @@ https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a
 - FastAPI
 - LangChain
 - ChromaDB
-- PyPDF / PDFPlumber
+- PDFPlumber
 
 ### Frontend
 
@@ -420,6 +445,21 @@ Conversation history
  ↓
 Uploaded documents
 ```
+---
+
+## 🔐 Säkerhet & integritet
+
+Projektet är utformat för lokal AI-bearbetning. När Ollama körs inom den
+egna infrastrukturen behöver dokument och frågor inte skickas till externa
+AI-tjänster.
+
+Applikationen bör dock betraktas som ett utvecklingsprojekt och inte som en
+färdig produktionslösning. Ytterligare säkerhetsåtgärder, exempelvis
+autentisering, åtkomstkontroll, rate limiting och hårdare validering av
+användarinput, skulle behövas innan applikationen exponeras publikt.
+
+Uppladdade filer hanteras med UUID-baserade filnamn för att minska risken
+för att ursprungliga filnamn används för manipulation av filsökvägar.
 
 ---
 
@@ -499,7 +539,7 @@ Smart-PDF-Assistant/
 
 ---
 
-## 📝 ToDo / Framtida förbättringar
+## 🚧 Framtida utveckling
 
 - [ ] **SQL-databas** – Integrera PostgreSQL via SQLAlchemy för beständig lagring av användarsessioner och dokumentmetadata.
 - [ ] **Fler filformat** – Stöd för `.docx` och `.txt`.
@@ -526,7 +566,9 @@ Prestandan påverkas också av vilken LLM, embeddings-modell och hårdvara som a
 
 ## 📄 License
 
-Detta projekt är ett utvecklingsprojekt och licensen kan komma att ändras beroende på hur projektet distribueras.
+Ingen öppen licens är för närvarande angiven för projektet.
+
+Projektet är främst avsett som ett utbildnings- och utvecklingsprojekt.
 
 ---
 
