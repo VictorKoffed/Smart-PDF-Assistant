@@ -1,12 +1,12 @@
 # =====================================================================
-# FASTAPI BACKEND - HUVUDPROGRAM (main.py)
+# FASTAPI BACKEND - MAIN PROGRAM (main.py)
 # ---------------------------------------------------------------------
-# Denna fil ansvarar för API-applikationen och dess endpoints.
-# Den tar emot anrop från React-frontend, hanterar användarsessioner
-# och skickar data vidare till logikklassen i 'services.py'.
+# This module defines the API application and its endpoints.
+# It receives requests from the React frontend, manages user sessions,
+# and delegates document-processing and RAG operations to PDFDocumentAssistant.
 #
-# ANVISNING FÖR ATT STARTA SERVERN:
-# Kör följande kommando i terminalen: uvicorn main:app --reload
+# SERVER STARTUP:
+# Run the following command in the terminal: uvicorn main:app --reload
 # =====================================================================
 
 import os
@@ -22,11 +22,11 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 # =====================================================================
-# MILJÖVARIABLER & KONFIGURATION
+# ENVIRONMENT VARIABLES & CONFIGURATION
 # ---------------------------------------------------------------------
-# Laddar inställningar från en .env-fil för att systemet enkelt
-# ska kunna driftas i olika miljöer (lokalt, utveckling, produktion)
-# utan att hårdkoda IP-adresser eller portar i källkoden.
+# Load configuration from a .env file so the application can be deployed
+# across different environments without hardcoding infrastructure-specific
+# addresses, ports, or AI service configuration into the source code.
 # =====================================================================
 load_dotenv()
 
@@ -37,38 +37,42 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "bge-m3")
 
 from services import PDFDocumentAssistant
 
-# Initiera FastAPI-applikationen
+# Initialize the FastAPI application.
 app = FastAPI()
 
 # =====================================================================
-# CORS-INSTÄLLNINGAR
+# CORS CONFIGURATION
 # ---------------------------------------------------------------------
-# Tillåter att React-klienten kan kommunicera med denna backend-server.
-# Konfigurationen tillåter alla headers, vilket är nödvändigt för att
-# ta emot anpassade headers som X-Session-ID.
+# Allows the React client to communicate with the FastAPI backend.
+# The current permissive configuration is suitable for development,
+# while a production deployment should restrict origins to trusted clients.
 # =====================================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tillåt alla ursprung under utveckling
+    allow_origins=["*"],  # Allow all origins during development.
     allow_credentials=True,
-    allow_methods=["*"],  # Tillåt alla metoder (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Tillåt alla headers (inklusive X-Session-ID)
+    allow_methods=["*"],  # Allow all HTTP methods used by the API.
+    allow_headers=["*"],  # Allow custom headers such as X-Session-ID.
 )
 
 # =====================================================================
-# SESSIONSHANTERING
+# SESSION MANAGEMENT
 # ---------------------------------------------------------------------
-# För att stödja flera samtidiga användare lagras en unik instans av
-# assistenten per session. Detta förhindrar att användare skriver över
-# varandras uppladdade filer eller chatthistorik (vektordatabas).
+# Each active session owns a separate assistant instance and therefore
+# separate upload and vector-database directories. This keeps document
+# data and conversation state isolated between concurrent users.
 # =====================================================================
 active_sessions = {}
 
 
 def cleanup_old_sessions():
     """
-    Rensar ut gamla sessioner och deras associerade mappar på disken
-    om de inte har varit aktiva på mer än 24 timmar (86400 sekunder).
+    Remove inactive sessions and their associated on-disk data after
+    24 hours of inactivity.
+
+    Session-specific files and vector indexes are temporary application
+    state, so expired sessions can be safely removed to prevent unbounded
+    disk usage over time.
     """
     now = time.time()
     expired_sessions = [
@@ -87,17 +91,24 @@ def cleanup_old_sessions():
 
 def get_assistant(session_id: str):
     """
-    Hämtar en existerande assistent för given session, eller skapar en ny
-    om det är användarens första anrop.
+    Return the assistant associated with the specified session, creating
+    a new isolated assistant instance when the session is accessed for
+    the first time.
+
+    The session identifier is validated before it is used to construct
+    filesystem paths, preventing user-controlled path components from
+    escaping the intended session directories.
     """
     if not session_id:
         raise HTTPException(status_code=400, detail="Session-ID saknas.")
 
     # =================================================================
-    # SÄKERHETSKONTROLL: Sanering av input (Förhindrar Path Traversal)
+    # SECURITY: SESSION ID VALIDATION
     # -----------------------------------------------------------------
-    # Vi tillåter endast bokstäver, siffror och bindestreck. Om någon
-    # försöker skicka in "../" för att manipulera filsystemet stoppas det.
+    # Only alphanumeric characters and hyphens are accepted because the
+    # session ID becomes part of filesystem paths. Restricting its format
+    # prevents path traversal attempts such as "../" from reaching the
+    # filesystem layer.
     # =================================================================
     if not re.match(r"^[a-zA-Z0-9-]+$", session_id):
         raise HTTPException(status_code=400, detail="Ogiltigt format på Session-ID.")
@@ -105,7 +116,8 @@ def get_assistant(session_id: str):
     cleanup_old_sessions()
 
     if session_id not in active_sessions:
-        # Skapar unika mappar för just denna session för att isolera datan
+        # Create session-specific storage locations to isolate each user's
+        # uploaded documents and vector index from other sessions.
         session_upload_dir = f"uploads/{session_id}"
         session_db_dir = f"./chroma_db/{session_id}"
 
@@ -126,46 +138,55 @@ def get_assistant(session_id: str):
     return active_sessions[session_id]["assistant"]
 
 
-# Pydantic-modell för inkommande frågor från klienten
+# Pydantic model representing questions submitted by the client.
 class QueryRequest(BaseModel):
+    """Represent a user question received from the frontend."""
     question: str
 
 
 # =====================================================================
-# ENDPOINT: UPPPLADDNING AV PDF (/upload)
+# ENDPOINT: PDF UPLOAD (/upload)
 # ---------------------------------------------------------------------
-# Tar emot en fil från frontend, validerar formatet, identifierar
-# användarens session, sparar filen lokalt och startar RAG-processen.
+# Receives a PDF from the frontend, validates its format, resolves the
+# user's session, stores the document locally, and starts the RAG
+# ingestion pipeline that extracts, chunks, embeds, and indexes its text.
 # =====================================================================
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(None)):
-    # Validera filändelse
+    # Validate the uploaded file type before it enters the document pipeline.
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Endast PDF-filer tillåts.")
 
-    # Hämta eller skapa assistenten för denna specifika användare
+    # Resolve the assistant belonging to this specific session.
     assistant = get_assistant(x_session_id)
 
     try:
-        # Rensa tidigare konversation/databas för denna specifika session
+        # Start with a clean conversation and document index when a new PDF
+        # is uploaded so previous document context cannot affect later queries.
         assistant.clear_memory()
 
-        # Säkerställ att den sessionsspecifika mappen existerar innan vi sparar
+        # Ensure the session-specific storage directory exists before writing
+        # the uploaded document to disk.
         os.makedirs(assistant.upload_dir, exist_ok=True)
 
-        # Generera ett säkert, unikt filnamn (t.ex. 550e8400-e29b-41d4-a716-446655440000.pdf)
+        # Generate an unpredictable, unique filename instead of trusting the
+        # user-provided filename when constructing the physical file path.
         safe_filename = f"{uuid.uuid4()}.pdf"
         file_path = os.path.join(assistant.upload_dir, safe_filename)
 
-        # Spara filen till disk med hjälp av shutil (optimerat och säkert)
+        # Stream the uploaded content directly to disk instead of loading the
+        # entire PDF into memory, which keeps memory usage predictable for
+        # potentially large documents.
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Skicka filen vidare för uppdelning och indexering i vektordatabasen.
-        # Detta är en tung operation och KÖRS DÄRFÖR I EN SEPARAT TRÅD för att inte blockera servern.
+        # Run the document ingestion pipeline in a worker thread because PDF
+        # extraction, chunking, embedding, and indexing are blocking operations.
+        # This keeps the asynchronous FastAPI event loop responsive to clients.
         await asyncio.to_thread(assistant.process_pdf, file_path)
 
-        # Returnera originalnamnet i meddelandet så frontend kan visa det snyggt
+        # Return the original filename only as presentation data so the frontend
+        # can display a meaningful name without using it as a filesystem path.
         return {"message": f"Filen {file.filename} har bearbetats för sessionen!"}
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -174,22 +195,27 @@ async def upload_pdf(file: UploadFile = File(...), x_session_id: str = Header(No
 
 
 # =====================================================================
-# ENDPOINT: STÄLLA FRÅGOR (/ask)
+# ENDPOINT: ASK QUESTION (/ask)
 # ---------------------------------------------------------------------
-# Tar emot en fråga, kopplar den till rätt användares session och
-# skickar frågan till RAG-motorn för att generera ett kontextuellt svar.
+# Receives a question, resolves it against the correct user session,
+# and delegates retrieval and response generation to the RAG pipeline.
+# The generated answer is streamed back to the React client using SSE
+# so the interface can display the response while it is being generated.
 # =====================================================================
 @app.post("/ask")
 def ask_question(payload: QueryRequest, x_session_id: str = Header(None)):
-    # Hämta rätt assistent baserat på inkommande session
+    # Resolve the assistant belonging to the incoming session.
     assistant = get_assistant(x_session_id)
 
-    # Säkerhetskontroll: Stoppa anropet om ingen PDF har laddats upp för sessionen
+    # Prevent queries from reaching the RAG pipeline before a document has
+    # been indexed for this session.
     if not hasattr(assistant, "vectorstore") or assistant.vectorstore is None:
         raise HTTPException(status_code=400, detail="Ingen PDF har laddats upp ännu för denna session.")
 
     try:
-        # Utför RAG-strömning via SSE
+        # Stream the RAG response through Server-Sent Events so generated
+        # content can reach the frontend incrementally instead of waiting
+        # for the complete language-model response.
         return StreamingResponse(
             assistant.stream_query_rag(payload.question),
             media_type="text/event-stream"
