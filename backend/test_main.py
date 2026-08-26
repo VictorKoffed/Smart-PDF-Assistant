@@ -1,12 +1,12 @@
 # =====================================================================
-# TESTFIL FÖR BACKEND (test_main.py)
+# BACKEND TEST SUITE (test_main.py)
 # ---------------------------------------------------------------------
-# Denna fil innehåller enhetstester för att säkerställa att både
-# FastAPI-endpoints (main.py) och logiken i serviceklassen (services.py)
-# fungerar som förväntat utan att krascha.
+# This module contains unit tests that verify the FastAPI endpoints and
+# the service-layer behavior work as intended without relying on external
+# infrastructure such as a live Ollama instance or persistent vector store.
 #
-# ANVISNING FÖR ATT KÖRA TESTER:
-# Kör följande kommando i terminalen: pytest
+# TEST COMMAND:
+# Run the following command in the terminal: pytest
 # =====================================================================
 
 import io
@@ -15,25 +15,28 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from main import app, get_assistant, LLM_MODEL
 
-# Skapar en testklient som simulerar HTTP-anrop direkt mot applikationen
+# Create a test client that exercises the FastAPI application through
+# its HTTP interface without requiring a separately running web server.
 client = TestClient(app)
 
 # =====================================================================
-# TEST-SESSION
-# Eftersom systemet kräver unika sessioner, definierar vi ett
-# statiskt session-id som vi använder genomgående i alla tester.
+# TEST SESSION
+# ---------------------------------------------------------------------
+# The application requires a session identifier to isolate user-specific
+# state. A deterministic identifier keeps the tests focused on behavior
+# rather than introducing unnecessary variability between test cases.
 # =====================================================================
 TEST_SESSION_ID = "test-session-12345"
 
 
 # ==========================================
-# 1. TESTER FÖR API-ENDPOINTS (main.py)
+# 1. API ENDPOINT TESTS (main.py)
 # ==========================================
 
 def test_upload_invalid_file_type():
     """
-    Testar att servern sätter stopp (400 Bad Request) om man
-    försöker ladda upp en fil som inte är en PDF.
+    Verify that the upload endpoint rejects non-PDF files with a
+    400 Bad Request response before they enter the document pipeline.
     """
     file_content = "detta är en textfil".encode("utf-8")
     response = client.post(
@@ -48,8 +51,9 @@ def test_upload_invalid_file_type():
 
 def test_upload_valid_pdf_success():
     """
-    Testar att en giltig PDF-uppladdning går igenom hela flödet med status 200 OK.
-    Mockar bort tunga processer (som filskrivning och RAG-bearbetning) för snabba tester.
+    Verify that a valid PDF upload completes successfully through the
+    endpoint while isolating the test from expensive file processing
+    and RAG ingestion operations.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
@@ -67,8 +71,9 @@ def test_upload_valid_pdf_success():
 
 def test_upload_process_pdf_runtime_error():
     """
-    Testar att om process_pdf kastar ett RuntimeError (t.ex. vid skannad eller tom PDF),
-    så svarar /upload endpointen med 400 Bad Request och felmeddelandet.
+    Verify that a document-processing RuntimeError, such as one caused
+    by an unreadable or scanned PDF, is translated by the API into a
+    controlled 400 Bad Request response.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
@@ -88,8 +93,8 @@ def test_upload_process_pdf_runtime_error():
 
 def test_ask_without_uploaded_document():
     """
-    Testar att /ask endpointen stoppar förfrågningar (returnerar felkod)
-    om ingen vektordatabas/dokument finns tillgängligt än.
+    Verify that the question endpoint refuses requests when the session
+    has no indexed document available for RAG retrieval.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
     test_assistant.vectorstore = None
@@ -105,8 +110,8 @@ def test_ask_without_uploaded_document():
 
 def test_ask_with_uploaded_document():
     """
-    Testar att /ask endpointen returnerar rätt strömmande svarsstruktur
-    när ett dokument faktiskt har laddats upp och behandlats.
+    Verify that the question endpoint returns the expected SSE response
+    structure when a document has already been indexed for the session.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
     test_assistant.vectorstore = MagicMock()
@@ -127,12 +132,13 @@ def test_ask_with_uploaded_document():
 
 
 # ==========================================
-# 2. TESTER FÖR TJÄNSTKLASSEN (services.py)
+# 2. SERVICE CLASS TESTS (services.py)
 # ==========================================
 
 def test_assistant_initialization():
     """
-    Validerar att assistenten laddar in rätt grundläggande konfigurationsvärden.
+    Verify that a session-specific assistant is initialized with the
+    expected configuration and empty conversational state.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
@@ -144,8 +150,8 @@ def test_assistant_initialization():
 
 def test_clear_memory():
     """
-    Testar att konversationsminnet (chat_history och conversation_summary) töms korrekt
-    när clear_memory-metoden anropas.
+    Verify that clear_memory removes conversational state so a newly
+    uploaded document starts without context from the previous document.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
 
@@ -161,7 +167,9 @@ def test_clear_memory():
 
 def test_summarize_memory():
     """
-    Testar att _summarize_memory skapar en sammanfattning och behåller det sista meddelandeparet.
+    Verify that conversation summarization replaces older raw history
+    with a generated summary while retaining the most recent interaction
+    for immediate conversational continuity.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
     test_assistant.chat_history = [
@@ -182,13 +190,14 @@ def test_summarize_memory():
 
 
 # ==========================================
-# 3. MOCKADE TESTER AV RAG-LOGIKEN
+# 3. MOCKED RAG LOGIC TESTS
 # ==========================================
 
 def test_query_rag_mocked():
     """
-    Testar query_rag-metoden isolerat utan att kräva en aktiv anslutning
-    till en lokal Ollama-server eller en riktig hårddiskdatabas.
+    Verify the synchronous RAG pipeline in isolation by mocking both
+    document retrieval and AI generation. This keeps the test deterministic
+    and prevents dependencies on Ollama or a persistent vector database.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
     test_assistant.vectorstore = MagicMock()
@@ -209,13 +218,14 @@ def test_query_rag_mocked():
 
 
 # ==========================================
-# 4. TESTER FÖR MODELLFEL (OLLAMA OFFLINE)
+# 4. MODEL FAILURE TESTS (OLLAMA OFFLINE)
 # ==========================================
 
 def test_query_rag_ollama_failure():
     """
-    Testar att ett undantag från Ollama-klienten fångas upp
-    och omvandlas till ett RuntimeError.
+    Verify that an exception from the Ollama client is contained within
+    the service boundary and exposed to callers as a RuntimeError rather
+    than leaking the underlying infrastructure exception.
     """
     test_assistant = get_assistant(TEST_SESSION_ID)
     test_assistant.vectorstore = MagicMock()
