@@ -77,14 +77,14 @@ export default function ChatContainer({
             {/* Footer showing the active document and providing a way to replace it. */}
             <div className="footer">
                 <div>
-                    <span className="footer-hint">Current document: </span>
+                    <span className="footer-hint">Aktuellt dokument: </span>
                     <strong>{loadedFileName}</strong>
                 </div>
 
                 <div className="footer-actions">
-                    <span className="footer-hint">Want to change?</span>
+                    <span className="footer-hint">Vill du byta?</span>
                     <label className="footer-file-label">
-                        <span className="footer-file-custom-btn">📁 Select new file</span>
+                        <span className="footer-file-custom-btn">📁 Välj ny fil</span>
                         <input
                             key={loadedFileName}
                             type="file"
@@ -95,7 +95,7 @@ export default function ChatContainer({
                     </label>
                     {file && (
                         <button onClick={uploadPDF} className="change-doc-btn">
-                            Analyze new document
+                            Analysera nytt dokument
                         </button>
                     )}
                 </div>
