@@ -2,7 +2,11 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 // =====================================================================
-// KOMPONENT: KÄLLHÄNVISNINGSKORT
+// COMPONENT: SOURCE REFERENCE CARD
+// ---------------------------------------------------------------------
+// Encapsulates the presentation of retrieved document context so users
+// can verify the information behind an AI response without overwhelming
+// the conversation view with long source excerpts.
 // =====================================================================
 function SourceCard({ src }) {
     const [isExpanded, setIsExpanded] = useState(false)
@@ -38,7 +42,12 @@ function SourceCard({ src }) {
 }
 
 // =====================================================================
-// KOMPONENT: ENSKILT CHATTMEDDELANDE
+// COMPONENT: INDIVIDUAL CHAT MESSAGE
+// ---------------------------------------------------------------------
+// Represents a single user or AI message and keeps response rendering,
+// source attribution, and long-message handling within the conversation
+// boundary. AI responses retain their Markdown formatting so generated
+// answers remain readable and consistent with the document-analysis UI.
 // =====================================================================
 export default function ChatMessage({ msg, isFinishedAiResponse }) {
     const isLongUserMessage = msg.role === 'user' && msg.text.length > 250;
@@ -62,7 +71,8 @@ export default function ChatMessage({ msg, isFinishedAiResponse }) {
                     <div className={msg.isThinking ? 'msg-temp' : ''}>
                         {msg.role === 'ai' ? (
                             msg.isThinking && msg.text === '' ? (
-                                // Visar prickar när vi väntar på första tecknet
+                                // Displays the waiting indicator until the first streamed token arrives,
+                                // giving the user immediate feedback while the local model is processing.
                                 <span className="thinking-indicator">
                                     Tänker
                                     <span className="dot-1">.</span>
@@ -70,17 +80,20 @@ export default function ChatMessage({ msg, isFinishedAiResponse }) {
                                     <span className="dot-3">.</span>
                                 </span>
                             ) : (
-                                // Visar Markdown så fort texten börjar strömma in
+                                // Render Markdown as soon as streaming begins so generated answers
+                                // progressively adopt the same structure as the completed response.
                                 <ReactMarkdown>{msg.text}</ReactMarkdown>
                             )
                         ) : (
-                            // Användarens meddelanden (vanlig text)
+                            // User messages remain plain text because they represent the user's
+                            // original input rather than model-generated document content.
                             <span>{msg.text}</span>
                         )}
                     </div>
                 )}
 
-                {/* KÄLLHÄNVISNINGAR MED UNIKA SIDOR */}
+                {/* Display unique source pages to keep document attribution useful without
+                    repeating multiple chunks from the same page in the interface. */}
                 {msg.sources && msg.sources.length > 0 && !msg.isThinking && (() => {
                     const uniqueSources = Array.from(
                         new Map(msg.sources.map(src => [src.page, src])).values()
