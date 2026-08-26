@@ -1,16 +1,16 @@
-# AGENTS.md för Smart PDF Backend
+# AGENTS.md for Smart PDF Backend
 
-## Utvecklingsmiljö & Kommandon
-- **Starta servern:** `uvicorn main:app --reload`
-- **Kör tester:** `pytest` (Ligger i `test_main.py`)
+## Development Environment & Commands
+- **Start the server:** `uvicorn main:app --reload`
+- **Run tests:** `pytest` (Located in `test_main.py`)
 
-## Arkitektur & Filer
-- **`main.py`**: Hanterar enbart FastAPI-endpoints, middleware (CORS) och injicering av sessioner (`X-Session-ID`). Ingen tung AI-logik här.
-- **`services.py`**: All kärnlogik för RAG. Hanterar PyPDFLoader, ChromaDB, embeddings och kommunikation med Ollama.
-- **`test_main.py`**: Enhetstester med `TestClient`.
+## Architecture & Files
+- **`main.py`**: Handles only FastAPI endpoints, middleware (CORS), and session injection (`X-Session-ID`). No heavy AI logic belongs here.
+- **`services.py`**: Contains all core RAG logic. Handles PyPDFLoader, ChromaDB, embeddings, and communication with Ollama.
+- **`test_main.py`**: Unit tests using `TestClient`.
 
-## Regler för kodgenerering
-1. **Sessionsisolering:** Appen stödjer flera användare. All data, filuppladdningar och ChromaDB-instanser MÅSTE vara isolerade per `X-Session-ID`.
-2. **Mocking i tester:** Om du (agenten) skriver nya tester för `test_main.py`, MÅSTE du mocka anropen till disk och Ollama. Testerna ska gå snabbt och inte kräva en levande databas.
-3. **Typing:** Använd Python type hints (`List`, `Dict`, `str`, etc.) för alla nya funktioner.
-4. **Felhantering:** Använd FastAPI:s `HTTPException` i `main.py` för att skicka tillbaka rena felmeddelanden till React-klienten om något går fel i `services.py`.
+## Code Generation Rules
+1. **Session isolation:** The application supports multiple users. All data, file uploads, and ChromaDB instances MUST be isolated per `X-Session-ID`.
+2. **Mocking in tests:** If the agent writes new tests for `test_main.py`, calls to disk and Ollama MUST be mocked. Tests should run quickly and must not require a live database.
+3. **Typing:** Use Python type hints (`List`, `Dict`, `str`, etc.) for all new functions.
+4. **Error handling:** Use FastAPI's `HTTPException` in `main.py` to return clear error messages to the React client when something goes wrong in `services.py`.
