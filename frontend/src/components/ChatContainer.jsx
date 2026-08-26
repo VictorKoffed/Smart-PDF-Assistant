@@ -3,11 +3,12 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
 // =====================================================================
-// KOMPONENT: CHAT CONTAINER (Konversationsvy)
+// COMPONENT: CHAT CONTAINER (Conversation View)
 // ---------------------------------------------------------------------
-// Huvudbehållare för själva chatten. Hanterar den automatiska scroll-logiken
-// (så att användaren inte fastnar längst ner om de scrollar upp för att läsa
-// historik) samt integrerar inmatning och dokumentbyten i sidfoten.
+// Main container for the chat interface. It manages scroll behavior so
+// users can review earlier messages without being forced back to the
+// latest response, while also integrating question input and document
+// replacement controls into the chat layout.
 // =====================================================================
 export default function ChatContainer({
                                           messages, question, setQuestion, askAI, isAsking,
@@ -17,8 +18,9 @@ export default function ChatContainer({
     const chatContainerRef = useRef(null);
     const isScrolledUp = useRef(false);
 
-    // UX: Identifierar om användaren har scrollat upp i historiken för att
-    // undvika att tvinga ner dem till botten mitt i läsningen när nya tokens strömmar in.
+    // UX: Track whether the user has moved away from the latest messages.
+    // This prevents incoming streamed AI tokens from repeatedly moving the
+    // viewport while the user is intentionally reading earlier conversation history.
     const handleScroll = () => {
         if (!chatContainerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -30,7 +32,9 @@ export default function ChatContainer({
         }
     };
 
-    // Auto-scrolla till botten vid nya meddelanden (förutsatt att man inte läser historik)
+    // Keep the conversation anchored to the latest message during normal use,
+    // while respecting the user's position when they have intentionally scrolled
+    // back through the conversation history.
     useEffect(() => {
         if (!isScrolledUp.current) {
             chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,9 +49,10 @@ export default function ChatContainer({
                 onScroll={handleScroll}
             >
                 {messages.map((msg, index) => {
-                    // REACT RECONCILIATION: Genom att dynamiskt styra nyckeln triggar vi
-                    // en ren omrendering när AI:n går från "Tänker..." till färdigt svar,
-                    // vilket krävs för att köra CSS-pop-animationen snyggt.
+                    // REACT RECONCILIATION: Dynamically changing the key forces
+                    // React to treat the transition from the temporary "Thinking..."
+                    // state to the completed AI response as a new element. This allows
+                    // the CSS pop animation to play when the final response appears.
                     const messageKey = msg.isTemp ? `temp-${index}` : `msg-${index}`;
                     const isFinishedAiResponse = msg.role === 'ai' && !msg.isTemp;
 
@@ -69,17 +74,17 @@ export default function ChatContainer({
                 isAsking={isAsking}
             />
 
-            {/* Sidfot som visar aktiv kontext och ger möjlighet att byta dokument */}
+            {/* Footer showing the active document and providing a way to replace it. */}
             <div className="footer">
                 <div>
-                    <span className="footer-hint">Aktuellt dokument: </span>
+                    <span className="footer-hint">Current document: </span>
                     <strong>{loadedFileName}</strong>
                 </div>
 
                 <div className="footer-actions">
-                    <span className="footer-hint">Vill du byta?</span>
+                    <span className="footer-hint">Want to change?</span>
                     <label className="footer-file-label">
-                        <span className="footer-file-custom-btn">📁 Välj ny fil</span>
+                        <span className="footer-file-custom-btn">📁 Select new file</span>
                         <input
                             key={loadedFileName}
                             type="file"
@@ -90,7 +95,7 @@ export default function ChatContainer({
                     </label>
                     {file && (
                         <button onClick={uploadPDF} className="change-doc-btn">
-                            Analysera nytt dokument
+                            Analyze new document
                         </button>
                     )}
                 </div>
