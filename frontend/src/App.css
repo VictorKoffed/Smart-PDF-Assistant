@@ -1,7 +1,7 @@
 /* =====================================================================
-   CSS-VARIABLER (Design Tokens)
-   Definierar applikationens färgpalett på ett ställe för konsekvent
-   temahantering och enklare underhåll.
+   CSS VARIABLES (Design Tokens)
+   Centralizes the visual foundation of the application so the interface
+   can maintain a consistent theme without duplicating color definitions.
 ===================================================================== */
 :root {
   --bg: #131314;
@@ -15,14 +15,15 @@
 }
 
 /* =====================================================================
-   HUVUDLAYOUT & VIEWPORT-HANTERING
-   Säkerställer att applikationen fyller skärmen utan onödiga
-   fula scrollbars i ytterkant.
+   MAIN LAYOUT & VIEWPORT HANDLING
+   Keeps the application constrained to the available viewport so the
+   chat experience remains visually contained rather than creating
+   unnecessary outer-page scrolling.
 ===================================================================== */
 .app-container {
   height: 100vh;
-  /* MOBIL-UX: Använder dvh (Dynamic Viewport Height) för att hantera
-     att mobilwebbläsare döljer/visar sina adressfält vid scroll. */
+  /* MOBILE UX: Uses the dynamic viewport height to account for mobile
+     browser chrome appearing and disappearing during scrolling. */
   height: 100dvh;
   box-sizing: border-box;
   background-color: var(--bg);
@@ -43,7 +44,7 @@
 }
 
 /* =====================================================================
-   HEADER (Applikationens rubriksektion)
+   HEADER (Application title section)
 ===================================================================== */
 .header {
   display: flex;
@@ -81,7 +82,7 @@
 }
 
 /* =====================================================================
-   UPPLADDNINGSVY (Initial vy innan dokument är inläst)
+   UPLOAD VIEW (Initial state before a document is loaded)
 ===================================================================== */
 .upload-container {
   flex: 1;
@@ -186,7 +187,7 @@
   font-size: 0.9rem;
 }
 
-/* Laddningsstatus under filanalys */
+/* Loading state displayed while the document is being analyzed. */
 .uploading-state {
   display: flex;
   flex-direction: column;
@@ -211,7 +212,7 @@
 }
 
 /* =====================================================================
-   CHATTGRÄNSSNITT & MEDDELANDEN
+   CHAT INTERFACE & MESSAGES
 ===================================================================== */
 .chat-container {
   flex: 1;
@@ -243,7 +244,8 @@
   border-radius: 12px;
   white-space: pre-wrap;
   line-height: 1.5;
-  /* UX: Vänsterställer texten för optimal läsbarhet av listor och stycken */
+  /* UX: Keeps message text left-aligned so paragraphs and structured
+     content remain easy to scan regardless of message origin. */
   text-align: left;
 }
 
@@ -293,7 +295,7 @@
 }
 
 /* =====================================================================
-   INMATNING OCH SIDFOT
+   MESSAGE INPUT & FOOTER
 ===================================================================== */
 .input-container {
   display: flex;
@@ -305,7 +307,8 @@
   align-items: flex-end;
 }
 
-/* UX: Stöd för dynamisk höjdökning via JS och säkerställer god läsbarhet */
+/* UX: Supports JavaScript-driven height expansion while preserving a
+   readable input area as the user composes longer questions. */
 .chat-input {
   flex: 1;
   padding: 12px 16px;
@@ -398,7 +401,7 @@
 }
 
 /* =====================================================================
-   KÄLLKORT & KÄLLHÄNVISNINGAR
+   SOURCE CARDS & DOCUMENT REFERENCES
 ===================================================================== */
 .sources-container {
   margin-top: 14px;
@@ -493,7 +496,7 @@
 }
 
 /* =====================================================================
-   ANIMATIONER (Tänker / Laddar & AI-Svar)
+   ANIMATIONS (Thinking / Loading & AI Response)
 ===================================================================== */
 @keyframes pulse-dots {
   0% { opacity: 0.2; }
@@ -509,8 +512,9 @@
   margin-right: 8px;
 }
 
-/* UX: Ger en mjuk pop-effekt och en ljusgradient som sveper över
-   svarsbubblan när AI:n genererat klart sitt svar. */
+/* UX: Provides a subtle completion cue so the user can immediately
+   distinguish a finalized AI response from content that is still
+   streaming. */
 .ai-pop-animation {
   position: relative;
   overflow: hidden;
@@ -546,9 +550,9 @@
 }
 
 /* =====================================================================
-   RESPONSIV DESIGN (Media Query för mobila enheter / skärmar < 768px)
-   Kompakterar gränssnittet, justerar bubbel-bredder och fixar sidfotens
-   layout på små ytor.
+   RESPONSIVE DESIGN (Media Query for mobile devices / screens < 768px)
+   Compresses the interface, adjusts message widths, and reorganizes
+   the footer so the core chat workflow remains usable on small screens.
 ===================================================================== */
 @media (max-width: 768px) {
   .app-container {
