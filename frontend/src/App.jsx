@@ -34,7 +34,9 @@ function App() {
 
     // The session identifier provides the backend with a stable boundary for
     // document and conversation state during the lifetime of this browser session.
-    const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Date.now().toString())
+    // FIX: Using lazy initialization in useState ensures the random ID is only generated once (Pure function).
+    const [sessionId] = useState(() => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString())
+
     const chatContainerRef = useRef(null)
     const isScrolledUp = useRef(false)
 
@@ -87,7 +89,7 @@ function App() {
         try {
             const response = await fetch(`${API_URL}/upload`, {
                 method: 'POST',
-                headers: { 'X-Session-ID': sessionIdRef.current },
+                headers: { 'X-Session-ID': sessionId },
                 body: formData,
             })
             if (!response.ok) throw new Error('Serverfel vid uppladdning')
@@ -106,6 +108,8 @@ function App() {
 
             setFile(null)
         } catch (error) {
+            // FIX: Logging the error to the console resolves the 'no-unused-vars' warning.
+            console.error("Upload Error:", error)
             setUploadStatus('❌ Uppladdning misslyckades. Körs backend?')
         } finally {
             setIsUploading(false)
@@ -141,7 +145,7 @@ function App() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Session-ID': sessionIdRef.current
+                    'X-Session-ID': sessionId
                 },
                 body: JSON.stringify({ question: currentQuestion }),
             })
