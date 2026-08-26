@@ -1,11 +1,11 @@
 // =====================================================================
-// REACT FRONTEND - HUVUDKOMPONENT (App.jsx)
+// REACT FRONTEND - MAIN COMPONENT (App.jsx)
 // ---------------------------------------------------------------------
-// Denna fil hanterar hela gränssnittet för Smart PDF-Assistent:
-// - Uppladdningsvy för PDF-filer.
-// - Interaktiv chattvy med meddelandehantering och Markdown-stöd.
-// - Sessionshantering för att isolera användardata mot backend.
-// - Starta miljö: npm run dev -- --host
+// This component coordinates the application's primary user workflow:
+// - PDF upload and document readiness state.
+// - Interactive chat state and streamed AI responses.
+// - Session management to isolate user data on the backend.
+// - Application-level scrolling behavior for the chat experience.
 // =====================================================================
 
 import { useState, useRef, useEffect } from 'react'
@@ -16,8 +16,12 @@ import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
+/**
+ * Coordinates document upload, session state, and the document-based
+ * conversation flow between the React frontend and backend.
+ */
 function App() {
-    // STATE-HANTERING
+    // STATE MANAGEMENT
     const [file, setFile] = useState(null)
     const [loadedFileName, setLoadedFileName] = useState('')
     const [uploadStatus, setUploadStatus] = useState('')
@@ -28,10 +32,14 @@ function App() {
     const [messages, setMessages] = useState([])
     const [isAsking, setIsAsking] = useState(false)
 
+    // The session identifier provides the backend with a stable boundary for
+    // document and conversation state during the lifetime of this browser session.
     const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Date.now().toString())
     const chatContainerRef = useRef(null)
     const isScrolledUp = useRef(false)
 
+    // Preserve the user's reading position when they inspect earlier messages
+    // instead of forcing the view to the newest streamed content.
     const handleScroll = () => {
         if (!chatContainerRef.current) return
         const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current
@@ -42,18 +50,30 @@ function App() {
         }
     }
 
+    // Keep the latest conversation visible during normal interaction while
+    // respecting an explicit user decision to scroll back through the history.
     useEffect(() => {
         if (!isScrolledUp.current && chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
         }
     }, [messages])
 
+    /**
+     * Captures the selected document so it can be validated and uploaded
+     * as the source of truth for the subsequent document conversation.
+     */
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0])
         }
     }
 
+    /**
+     * Uploads the selected PDF and transitions the interface into a
+     * document-ready state only after the backend has accepted the document.
+     * The session header ensures the uploaded document remains isolated
+     * from other application sessions.
+     */
     const uploadPDF = async () => {
         if (!file) return setUploadStatus('Vänligen välj en fil först.')
 
@@ -92,6 +112,12 @@ function App() {
         }
     }
 
+    /**
+     * Sends the current question to the backend and incrementally incorporates
+     * Server-Sent Events into the active AI message. Keeping the response
+     * incremental allows the interface to provide immediate feedback while
+     * the local model is still generating the answer.
+     */
     const askAI = async () => {
         if (!question.trim()) return
 
@@ -101,6 +127,8 @@ function App() {
         setQuestion('')
         setIsAsking(true)
 
+        // Create the temporary AI message before streaming starts so incoming
+        // sources and tokens always have a stable message target to update.
         setMessages(prev => [...prev, {
             role: 'ai',
             text: '',
@@ -127,6 +155,8 @@ function App() {
             const decoder = new TextDecoder()
             let buffer = ''
 
+            // Keep incomplete SSE frames in the buffer so a network chunk split
+            // in the middle of a message cannot cause partial JSON to be parsed.
             while (true) {
                 const { value, done } = await reader.read()
                 if (done) break
@@ -168,7 +198,7 @@ function App() {
                                     return newMessages
                                 })
                             } else if (data.type === 'done') {
-                                // Klar
+                                // Completion is handled by the surrounding stream lifecycle.
                             }
                         } catch (e) {
                             console.error('Kunde inte parsea SSE JSON', e)
@@ -194,6 +224,8 @@ function App() {
                 return newMessages
             })
         } finally {
+            // Clear the transient asking state and finalize the temporary AI
+            // message so the UI can distinguish completed responses from streaming ones.
             setIsAsking(false)
             setMessages(prev => {
                 const newMessages = [...prev]
