@@ -1,5 +1,9 @@
 // =====================================================================
-// KOMPONENT: UPPLADDNINGSVY
+// COMPONENT: UPLOAD VIEW
+// ---------------------------------------------------------------------
+// Provides the initial document-ingestion experience and communicates
+// whether the selected PDF is ready for analysis or is currently being
+// processed by the backend RAG pipeline.
 // =====================================================================
 export default function UploadView({ file, isUploading, uploadStatus, handleFileChange, uploadPDF }) {
     const Spinner = () => (
