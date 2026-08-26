@@ -1,5 +1,9 @@
 // =====================================================================
-// KOMPONENT: HEADER
+// COMPONENT: HEADER
+// ---------------------------------------------------------------------
+// Provides the application's visual identity and establishes the purpose
+// of the interface before users begin interacting with the document
+// analysis workflow.
 // =====================================================================
 export default function Header() {
     return (
