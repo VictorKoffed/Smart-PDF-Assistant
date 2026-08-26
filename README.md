@@ -1,73 +1,72 @@
-# 📄 Smart PDF-Assistent
+# 📄 Smart PDF Assistant
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local_AI-white?logo=ollama)](https://ollama.com/)
 
-En lokal AI-applikation för dokumentanalys med **RAG (Retrieval-Augmented Generation)**. Applikationen låter användaren ladda upp PDF-filer och ställa frågor om innehållet. AI-bearbetningen körs lokalt inom den egna infrastrukturen med hjälp av
-**Ollama**, medan backend och frontend hanterar dokument, sökningar och
-användargränssnitt.
+A local AI application for document analysis using **RAG (Retrieval-Augmented Generation)**. The application allows users to upload PDF files and ask questions about their contents. AI processing runs locally within their own infrastructure using
+**Ollama**, while the backend and frontend handle documents, searches, and
+the user interface.
 
 ---
 
-## 📑 Innehåll
+## 📑 Contents
 
-- [Projektbakgrund](#-projektbakgrund)
-- [Funktioner](#-funktioner)
+- [Project Background](#-project-background)
+- [Features](#-features)
 - [Demo](#-demo)
-- [Skärmdumpar](#-skärmdumpar)
-- [Teknikstack](#️-teknikstack)
-- [Arkitektur](#️-arkitektur)
-- [RAG-flöde](#-rag-flöde)
-- [Installation & Start](#️-installation--start)
-- [Utvecklingsmiljö](#-utvecklingsmiljö)
-- [Driftsättning med Docker & Portainer](#-driftsättning-med-docker--portainer)
-- [Filhantering och sessionshantering](#-filhantering-och-sessionshantering)
-- [Säkerhet & integritet](#-säkerhet--integritet)
-- [Realtidskommunikation](#-realtidskommunikation)
-- [Källhänvisningar](#-källhänvisningar)
-- [Projektstruktur](#-projektstruktur)
-- [Framtida utveckling](#-framtida-utveckling)
-- [Begränsningar](#️-begränsningar)
+- [Screenshots](#-screenshots)
+- [Tech Stack](#️-tech-stack)
+- [Architecture](#️-architecture)
+- [RAG Flow](#-rag-flow)
+- [Installation & Startup](#️-installation--startup)
+- [Development Environment](#-development-environment)
+- [Deployment with Docker & Portainer](#-deployment-with-docker--portainer)
+- [File and Session Management](#-file-and-session-management)
+- [Security & Privacy](#-security--privacy)
+- [Real-Time Communication](#-real-time-communication)
+- [Source References](#-source-references)
+- [Project Structure](#-project-structure)
+- [Future Development](#-future-development)
+- [Limitations](#️-limitations)
 - [License](#-license)
-- [AI-assistans och kodgenerering](#-ai-assistans-och-kodgenerering)
+- [AI Assistance and Code Generation](#-ai-assistance-and-code-generation)
 
 ---
 
-## 🎯 Projektbakgrund
+## 🎯 Project Background
 
-Detta projekt utvecklades på fritiden som ett eget tekniskt projekt med
-fokus på lokal AI, RAG och fullstack-utveckling.
+This project was developed in my spare time as a personal technical project with
+a focus on local AI, RAG, and full-stack development.
 
-Syftet var att utforska hur moderna AI-komponenter kan kombineras med en
-egen backend och frontend för att skapa en praktisk applikation för
-dokumentanalys.
+The goal was to explore how modern AI components can be combined with a custom
+backend and frontend to create a practical application for document analysis.
 
-Projektet har framför allt fungerat som ett sätt att fördjupa kunskaper inom:
+The project has primarily served as a way to deepen my knowledge of:
 
-- RAG och semantisk sökning.
-- LLM och embeddings.
-- Lokal AI-inferens med Ollama.
-- FastAPI och backend-utveckling.
-- React och frontend-utveckling.
-- Docker och serverdrift.
-- Kommunikation mellan separata tjänster.
+- RAG and semantic search.
+- LLMs and embeddings.
+- Local AI inference with Ollama.
+- FastAPI and backend development.
+- React and frontend development.
+- Docker and server operations.
+- Communication between separate services.
 
 ---
 
-## 🚀 Funktioner
+## 🚀 Features
 
-- **Lokal AI-bearbetning** – Dokument och frågor kan behandlas lokalt utan att data behöver skickas till externa molntjänster.
-- **RAG-flöde** – Text extraheras från PDF-filer med `PDFPlumber`, rensas med Regex och delas upp i mindre textbitar (`chunk_size=2500`).
-- **Vektorbaserad sökning** – Textbitar omvandlas till embeddings och lagras persistent i **ChromaDB**.
-- **Konversationsminne** – Tidigare frågor och svar sparas under sessionen. Äldre historik kan sammanfattas för att minska användningen av VRAM och kontextfönster.
-- **Realtids-streaming** – AI-svar skickas från FastAPI till React-klienten via **Server-Sent Events (SSE)**.
-- **Sessionshantering** – Unika UUID-baserade sessioner används för att kunna hantera flera samtidiga användare.
-- **Filhantering** – Uppladdade filer får UUID-baserade filnamn och skrivs till disk med `shutil.copyfileobj`.
-- **React-baserat gränssnitt** – Komponentbaserad frontend med Markdown-stöd, automatisk scrollning och CSS-animationer.
-- **Källhänvisningar** – Visar vilka sidor och textbitar som använts som underlag för AI-svaret.
-- **Expanderbara källor** – Användaren kan öppna källhänvisningarna och läsa hela det relevanta textstycket.
+- **Local AI processing** – Documents and questions can be processed locally without sending data to external cloud services.
+- **RAG pipeline** – Text is extracted from PDF files using `PDFPlumber`, cleaned with Regex, and split into smaller text chunks (`chunk_size=2500`).
+- **Vector-based search** – Text chunks are converted into embeddings and stored persistently in **ChromaDB**.
+- **Conversation memory** – Previous questions and answers are stored during the session. Older history can be summarized to reduce VRAM and context-window usage.
+- **Real-time streaming** – AI responses are sent from FastAPI to the React client using **Server-Sent Events (SSE)**.
+- **Session management** – Unique UUID-based sessions are used to support multiple concurrent users.
+- **File management** – Uploaded files are given UUID-based filenames and written to disk using `shutil.copyfileobj`.
+- **React-based interface** – Component-based frontend with Markdown support, automatic scrolling, and CSS animations.
+- **Source references** – Shows which pages and text chunks were used as the basis for the AI response.
+- **Expandable sources** – Users can expand the source references and read the full relevant text.
 
 ---
 
@@ -77,23 +76,23 @@ https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a
 
 ---
 
-## 📸 Skärmdumpar
+## 📸 Screenshots
 
-### Uppladdningsvy
+### Upload View
 
 ![Uppladdning](images/upload.png)
 
-### Chattgränssnitt
+### Chat Interface
 
 ![Chatt](images/chat.png)
 
-### Källhänvisningar
+### Source References
 
 ![Källor](images/sources.png)
 
 ---
 
-## 🛠️ Teknikstack
+## 🛠️ Tech Stack
 
 ### Backend
 
@@ -112,14 +111,14 @@ https://github.com/user-attachments/assets/21b88ec2-863a-4fcb-bd2b-c65d951e971a
 ### AI
 
 - Ollama
-- LLM, exempelvis `gemma4:e4b`
-- Embeddings-modell, exempelvis `bge-m3`
+- LLM, for example `gemma4:e4b`
+- Embedding model, for example `bge-m3`
 
 ---
 
-## 🏗️ Arkitektur
+## 🏗️ Architecture
 
-Applikationen är uppdelad i tre huvudsakliga delar:
+The application is divided into three main components:
 
 ```text
 ┌─────────────────────────┐
@@ -152,13 +151,13 @@ Applikationen är uppdelad i tre huvudsakliga delar:
 └─────────────────────────┘
 ```
 
-AI-servern kan köras separat från FastAPI- och React-applikationen. Det gör att AI-inferensen kan ligga på en dator med kraftigare GPU medan själva applikationen körs på en annan maskin.
+The AI server can run separately from the FastAPI and React application. This allows AI inference to run on a machine with a more powerful GPU while the application itself runs on another machine.
 
 ---
 
-## 🔎 RAG-flöde
+## 🔎 RAG Flow
 
-När en PDF laddas upp genomgår dokumentet följande steg:
+When a PDF is uploaded, the document goes through the following steps:
 
 ```text
 PDF
@@ -176,7 +175,7 @@ Embeddings
 ChromaDB
 ```
 
-När användaren sedan ställer en fråga:
+When the user then asks a question:
 
 ```text
 User question
@@ -196,46 +195,46 @@ Streaming response
 React UI
 ```
 
-På detta sätt skickas relevanta delar av dokumentet till språkmodellen istället för att hela PDF-filen behöver skickas med varje fråga.
+This way, only relevant parts of the document are sent to the language model instead of the entire PDF being included with every question.
 
 ---
 
-## ⚙️ Installation & Start
+## ⚙️ Installation & Startup
 
-Följ stegen nedan för att köra projektet lokalt.
+Follow the steps below to run the project locally.
 
-### Förutsättningar
+### Prerequisites
 
-Installera följande:
+Install the following:
 
 - Node.js
 - Python
 - Ollama
 
-Ollama behöver vara installerat och igång med de modeller som används av projektet.
+Ollama must be installed and running with the models used by the project.
 
-Exempel:
+Example:
 
 ```bash
 ollama pull gemma4:e4b
 ollama pull bge-m3
 ```
 
-### 🐍 1. Starta Backend
+### 🐍 1. Start the Backend
 
-Navigera till backend-mappen:
+Navigate to the backend directory:
 
 ```bash
 cd backend
 ```
 
-Skapa en virtuell Python-miljö:
+Create a Python virtual environment:
 
 ```bash
 python -m venv venv
 ```
 
-Aktivera miljön.
+Activate the environment.
 
 **Windows:**
 
@@ -249,23 +248,23 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-Installera projektets beroenden:
+Install the project dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Miljövariabler
+### Environment Variables
 
-Kopiera `.env.example` till en ny fil:
+Copy `.env.example` to a new file:
 
 ```text
 .env
 ```
 
-Anpassa därefter inställningarna efter din lokala miljö.
+Then adjust the settings to match your local environment.
 
-Exempel:
+Example:
 
 ```env
 OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -273,142 +272,142 @@ LLM_MODEL=gemma4:e4b
 EMBEDDING_MODEL=bge-m3
 ```
 
-Om Ollama körs på en annan dator behöver `OLLAMA_BASE_URL` ändras till serverns IP-adress.
+If Ollama is running on another machine, change `OLLAMA_BASE_URL` to the server's IP address.
 
-### Starta FastAPI
+### Start FastAPI
 
-Kör:
+Run:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Backend-servern startar normalt på:
+The backend server normally starts at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-### ⚛️ 2. Starta Frontend
+### ⚛️ 2. Start the Frontend
 
-Öppna en ny terminal och navigera till frontend-mappen:
+Open a new terminal and navigate to the frontend directory:
 
 ```bash
 cd frontend
 ```
 
-Installera npm-paketen:
+Install the npm packages:
 
 ```bash
 npm install
 ```
 
-Kopiera `.env.example` till:
+Copy `.env.example` to:
 
 ```text
 .env
 ```
 
-Kontrollera att API-adressen pekar mot rätt FastAPI-server.
+Make sure the API address points to the correct FastAPI server.
 
-Exempel:
+Example:
 
 ```env
 VITE_API_URL=http://127.0.0.1:8000
 ```
 
-Starta utvecklingsservern:
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Vite visar därefter adressen till webbapplikationen i terminalen.
+Vite will then display the address of the web application in the terminal.
 
 ---
 
-## 💻 Utvecklingsmiljö
+## 💻 Development Environment
 
-Projektet är utvecklat för att kunna dela upp AI-inferensen från själva applikationen.
+The project is designed to separate AI inference from the application itself.
 
-### AI-server
+### AI Server
 
-AI-delen körs på en separat Ubuntu Server-maskin.
+The AI component runs on a separate Ubuntu Server machine.
 
-**Hårdvara:**
+**Hardware:**
 
 - Nvidia RTX 4060M – 8 GB VRAM
 - AMD Ryzen 7 8840HS
 - 32 GB DDR5 5600 MHz CL40
 
-**Programvara:**
+**Software:**
 
 - Ubuntu Server
 - Ollama
 - Docker
 
-**Roll:**
+**Role:**
 
-AI-servern hanterar:
+The AI server handles:
 
-- LLM-generering
+- LLM generation
 - Embeddings
-- AI-relaterad bearbetning
+- AI-related processing
 
-### Utvecklingsmaskin
+### Development Machine
 
-Backend och frontend utvecklas på en separat dator.
+The backend and frontend are developed on a separate computer.
 
-**Operativsystem:**
+**Operating System:**
 
 - CachyOS Linux
 
-**Hårdvara:**
+**Hardware:**
 
 - AMD Radeon RX 9070 XT
 - AMD Ryzen 9 5900X
 - 32 GB DDR4 3600 MHz CL14
 
-**Utvecklingsverktyg:**
+**Development Tools:**
 
 - PyCharm – Backend
 - WebStorm – Frontend
 
-**Roll:**
+**Role:**
 
-- Utveckling
+- Development
 - FastAPI
 - React
-- API-routing
-- Klienthantering
+- API routing
+- Client handling
 
 ---
 
-## 🐳 Driftsättning med Docker & Portainer
+## 🐳 Deployment with Docker & Portainer
 
-Applikationen är containeriserad och kan köras med `docker-compose.yml`.
+The application is containerized and can be run using `docker-compose.yml`.
 
-Det gör det möjligt att sätta upp backend och frontend i en servermiljö utan att installera alla beroenden manuellt på värddatorn.
+This makes it possible to deploy the backend and frontend in a server environment without manually installing all dependencies on the host machine.
 
-### Förutsättningar
+### Prerequisites
 
 - Docker
-- Portainer, om applikationen ska administreras via Portainer
-- En Ollama-server som är åtkomlig från applikationen
+- Portainer, if the application is to be managed through Portainer
+- An Ollama server accessible from the application
 
-### Steg-för-steg via Portainer
+### Step-by-Step via Portainer
 
-1. Kontrollera att Ollama körs på servern.
-2. Kontrollera att Ollama accepterar anslutningar från applikationen.
-3. Logga in i Portainer.
-4. Gå till **Stacks**.
-5. Välj **Add stack**.
-6. Välj **Repository** som byggmetod.
-7. Ange GitHub-repositoriet.
-8. Lägg till nödvändiga miljövariabler.
-9. Starta stacken.
+1. Make sure Ollama is running on the server.
+2. Make sure Ollama accepts connections from the application.
+3. Log in to Portainer.
+4. Go to **Stacks**.
+5. Select **Add stack**.
+6. Select **Repository** as the deployment method.
+7. Enter the GitHub repository.
+8. Add the required environment variables.
+9. Start the stack.
 
-Exempel på miljövariabler:
+Example environment variables:
 
 ```env
 VITE_API_URL=http://<SERVER_IP>:5174
@@ -417,17 +416,17 @@ LLM_MODEL=gemma4:e4b
 EMBEDDING_MODEL=bge-m3
 ```
 
-Byt ut `<SERVER_IP>` mot IP-adressen till den server där tjänsterna körs.
+Replace `<SERVER_IP>` with the IP address of the server where the services are running.
 
 ---
 
-## 🔐 Filhantering och sessionshantering
+## 🔐 File and Session Management
 
-Uppladdade PDF-filer sparas inte med användarens ursprungliga filnamn som fysisk sökväg.
+Uploaded PDF files are not stored using the user's original filename as the physical file path.
 
-Istället används UUID-baserade filnamn.
+Instead, UUID-based filenames are used.
 
-Exempel:
+Example:
 
 ```text
 original.pdf
@@ -435,11 +434,11 @@ original.pdf
 550e8400-e29b-41d4-a716-446655440000.pdf
 ```
 
-Det minskar risken för att användarens filnamn används för att manipulera sökvägar.
+This reduces the risk of user-provided filenames being used to manipulate file paths.
 
-Filer kopieras till disk med `shutil.copyfileobj` istället för att läsa in hela filen i minnet.
+Files are copied to disk using `shutil.copyfileobj` instead of loading the entire file into memory.
 
-Sessioner identifieras med UUID:
+Sessions are identified using UUIDs:
 
 ```text
 User
@@ -452,27 +451,27 @@ Uploaded documents
 ```
 ---
 
-## 🔐 Säkerhet & integritet
+## 🔐 Security & Privacy
 
-Projektet är utformat för lokal AI-bearbetning. När Ollama körs inom den
-egna infrastrukturen behöver dokument och frågor inte skickas till externa
-AI-tjänster.
+The project is designed for local AI processing. When Ollama runs within your
+own infrastructure, documents and questions do not need to be sent to external
+AI services.
 
-Applikationen bör dock betraktas som ett utvecklingsprojekt och inte som en
-färdig produktionslösning. Ytterligare säkerhetsåtgärder, exempelvis
-autentisering, åtkomstkontroll, rate limiting och hårdare validering av
-användarinput, skulle behövas innan applikationen exponeras publikt.
+However, the application should be considered a development project rather
+than a production-ready solution. Additional security measures, such as
+authentication, access control, rate limiting, and stricter user-input
+validation, would be required before exposing the application publicly.
 
-Uppladdade filer hanteras med UUID-baserade filnamn för att minska risken
-för att ursprungliga filnamn används för manipulation av filsökvägar.
+Uploaded files use UUID-based filenames to reduce the risk of original
+filenames being used to manipulate file paths.
 
 ---
 
-## 📡 Realtidskommunikation
+## 📡 Real-Time Communication
 
-AI-svaren skickas till frontend med **Server-Sent Events (SSE)**.
+AI responses are sent to the frontend using **Server-Sent Events (SSE)**.
 
-Istället för att vänta på att hela svaret ska genereras skickas delar av svaret löpande:
+Instead of waiting for the entire response to be generated, parts of the response are sent continuously:
 
 ```text
 Ollama
@@ -483,40 +482,40 @@ SSE stream
    ↓
 React
    ↓
-UI uppdateras kontinuerligt
+UI updated continuously
 ```
 
-Det gör att användaren kan börja läsa svaret direkt medan modellen fortfarande genererar resten.
+This allows the user to start reading the response immediately while the model is still generating the rest.
 
 ---
 
-## 📚 Källhänvisningar
+## 📚 Source References
 
-En viktig del av applikationen är att visa vilket dokumentmaterial som ligger bakom AI-svaret.
+An important part of the application is showing which document material the AI response is based on.
 
-För varje relevant chunk kan applikationen visa exempelvis:
+For each relevant chunk, the application can display, for example:
 
-- Dokument
-- Sida
-- Textstycke
-- Relevanta delar av dokumentet
+- Document
+- Page
+- Text excerpt
+- Relevant parts of the document
 
-Exempel:
+Example:
 
 ```text
-Källa
-├── Dokument: rapport.pdf
-├── Sida: 14
-└── Chunk: "...relevant text från dokumentet..."
+Source
+├── Document: rapport.pdf
+├── Page: 14
+└── Chunk: "...relevant text from the document..."
 ```
 
-Det gör det enklare att kontrollera var informationen i AI-svaret kommer ifrån.
+This makes it easier to verify where the information in the AI response comes from.
 
 ---
 
-## 📂 Projektstruktur
+## 📂 Project Structure
 
-En förenklad bild av projektets struktur:
+A simplified view of the project structure:
 
 ```text
 Smart-PDF-Assistant/
@@ -544,34 +543,34 @@ Smart-PDF-Assistant/
 
 ---
 
-## 🚧 Framtida utveckling
+## 🚧 Future Development
 
-- [ ] **SQL-databas** – Integrera PostgreSQL via SQLAlchemy för beständig lagring av användarsessioner och dokumentmetadata.
-- [ ] **Fler filformat** – Stöd för `.docx` och `.txt`.
-- [ ] **Användarkonton** – Separata användarkonton och autentisering.
-- [ ] **Persistent chat history** – Spara konversationer mellan sessioner.
-- [ ] **Dokumenthantering** – Möjlighet att visa, ta bort och organisera uppladdade dokument.
-- [ ] **Fler embeddings-modeller** – Möjlighet att välja embeddings-modell.
-- [ ] **Fler LLM-modeller** – Möjlighet att välja språkmodell från gränssnittet.
-- [ ] **Bättre källvisning** – Tydligare markering av exakt var i dokumentet informationen hittades.
-- [ ] **OCR-stöd** – Möjlighet att analysera PDF-filer som huvudsakligen består av inskannade bilder.
-- [ ] **Streaming-förbättringar** – Bättre hantering av avbrutna och återupptagna AI-svar.
+- [ ] **SQL database** – Integrate PostgreSQL via SQLAlchemy for persistent storage of user sessions and document metadata.
+- [ ] **More file formats** – Support for `.docx` and `.txt`.
+- [ ] **User accounts** – Separate user accounts and authentication.
+- [ ] **Persistent chat history** – Save conversations across sessions.
+- [ ] **Document management** – Ability to view, delete, and organize uploaded documents.
+- [ ] **More embedding models** – Allow users to select the embedding model.
+- [ ] **More LLM models** – Allow users to select the language model from the interface.
+- [ ] **Improved source display** – Clearer indication of exactly where information was found in the document.
+- [ ] **OCR support** – Ability to analyze PDF files that primarily consist of scanned images.
+- [ ] **Streaming improvements** – Better handling of interrupted and resumed AI responses.
 
 ---
 
-## ⚠️ Begränsningar
+## ⚠️ Limitations
 
-Projektet är utvecklat som ett lokalt AI- och RAG-projekt och bör ses som en teknisk prototyp.
+The project was developed as a local AI and RAG project and should be considered a technical prototype.
 
-Svar från språkmodellen kan fortfarande innehålla felaktigheter även om relevanta dokumentkällor visas. Källhänvisningarna visar vilket material som skickats till modellen, men garanterar inte att modellens slutsats är korrekt.
+Language model responses may still contain inaccuracies even when relevant document sources are shown. The source references indicate which material was sent to the model, but do not guarantee that the model's conclusion is correct.
 
-Prestandan påverkas också av vilken LLM, embeddings-modell och hårdvara som används.
+Performance is also affected by the LLM, embedding model, and hardware being used.
 
 ---
 
 ## 📜 License
 
-Detta projekt distribueras under **MIT License**.
+This project is distributed under the **MIT License**.
 
 ```text
 MIT License
@@ -599,19 +598,19 @@ SOFTWARE.
 
 ---
 
-## 🤖 AI-assistans och kodgenerering
+## 🤖 AI Assistance and Code Generation
 
-AI-verktyg har använts som stöd under utvecklingen av projektet.
+AI tools have been used as support during the development of the project.
 
-AI har bland annat använts för:
+AI has been used for:
 
-- Idéer och problemlösning
-- Felsökning
-- Kodförslag
-- Strukturering av komponenter
-- Dokumentation
-- Förslag på förbättringar
+- Ideas and problem-solving
+- Debugging
+- Code suggestions
+- Component structuring
+- Documentation
+- Suggestions for improvements
 
-Den slutliga implementationen har granskats och anpassats manuellt.
+The final implementation has been reviewed and manually adapted.
 
-AI-verktygen har fungerat som ett stöd i utvecklingsprocessen och inte som en ersättning för utvecklingsarbetet.
+The AI tools have served as support throughout the development process, not as a replacement for development work.
