@@ -7,6 +7,6 @@ uploads/
 dist/
 .DS_Store
 
-# Miljövariabler
+# Environment Variables
 .env
 .aider*
