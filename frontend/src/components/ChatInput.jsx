@@ -37,7 +37,7 @@ export default function ChatInput({ question, setQuestion, askAI, isAsking }) {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a question about the document..."
+                placeholder="Ställ en fråga om dokumentet..."
                 rows={1}
                 autoFocus
                 className="chat-input"
@@ -48,7 +48,7 @@ export default function ChatInput({ question, setQuestion, askAI, isAsking }) {
                 disabled={isAsking || !question.trim()}
                 className="send-btn"
             >
-                Send
+                Skicka
             </button>
         </div>
     );
