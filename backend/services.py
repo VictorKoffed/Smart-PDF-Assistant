@@ -1,14 +1,14 @@
 # =====================================================================
-# TJÄNSTKLASS FÖR PDF OCH RAG-LOGIK (services.py)
+# PDF AND RAG SERVICE CLASS (services.py)
 # ---------------------------------------------------------------------
-# Denna fil utgör kärnmotorn (The Brain) för applikationen och 
-# implementerar Retrieval-Augmented Generation (RAG)-arkitekturen:
-# - Dokumentbearbetning: Extrahering, textdelning (chunking) och 
-#   vektorisering (embeddings) till en lokal ChromaDB.
-# - Konversationsminne: Hantering och intelligent sammanfattning av 
-#   chatthistorik för att spara VRAM och hålla kontextfönstret optimalt.
-# - AI-generering: Sökning efter relevanta textdelar (Similarity Search)
-#   och kommunikation med lokal LLM via Ollama (med stöd för SSE-streaming).
+# This module contains the core engine of the application and implements
+# the Retrieval-Augmented Generation (RAG) architecture:
+# - Document processing: text extraction, chunking, and embedding into
+#   a local ChromaDB vector store.
+# - Conversation memory: management and intelligent summarization of
+#   chat history to reduce VRAM usage and keep the context window efficient.
+# - AI generation: retrieval of relevant document content and communication
+#   with the local LLM through Ollama, including SSE streaming support.
 # =====================================================================
 
 import os
@@ -26,16 +26,18 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Konfigurera loggning för spårning och felsökning i produktion/utveckling
+# Configure logging for operational monitoring and troubleshooting
+# across both development and production environments.
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # =====================================================================
-# AI PROMPT-MALL (DRY - Don't Repeat Yourself)
+# AI PROMPT TEMPLATE (DRY - Don't Repeat Yourself)
 # ---------------------------------------------------------------------
-# Arkitektoniskt beslut: Genom att centralisera systemprompten som en
-# konstant säkerställs enhetligt beteende, strikt faktatrogenhet och 
-# prompt injection-skydd på ett enda ställe för alla AI-anrop.
+# Architectural decision: Centralizing the system prompt as a constant
+# ensures consistent model behavior, strict factual grounding, and a
+# single controlled location for prompt-injection protection across
+# all AI requests.
 # =====================================================================
 RAG_SYSTEM_PROMPT = """You are an advanced, strictly factual AI assistant ("Smart PDF-Assistent") designed to analyze and answer questions based on provided documents.
 
@@ -62,8 +64,9 @@ Answer:"""
 
 class PDFDocumentAssistant:
     """
-    Huvudklass som inkapslar all affärslogik för dokumenthantering,
-    vektorsökning (ChromaDB) och interaktion med den lokala AI-modellen.
+    Encapsulates the application's core business logic for document
+    processing, vector search through ChromaDB, conversation memory,
+    and interaction with the local AI model.
     """
 
     def __init__(
@@ -86,33 +89,42 @@ class PDFDocumentAssistant:
         self.chunk_overlap = chunk_overlap
         self.k = k
 
-        # Tillståndshantering för den aktiva sessionens vektordatabas
+        # Holds the active session's vector store so subsequent questions
+        # can reuse the document index without rebuilding it.
         self.vectorstore = None
 
-        # Säkerställ att den sessionsspecifika mappen existerar på disk
+        # Ensure that the session-specific storage directory exists before
+        # any uploaded document is persisted.
         os.makedirs(self.upload_dir, exist_ok=True)
 
         try:
-            # Initierar en persistent ChromaDB-klient för att spara vektorer på disk
+            # Initialize a persistent ChromaDB client so document embeddings
+            # remain available on disk for the lifetime of the session.
             self.chroma_client = chromadb.PersistentClient(
                 path=self.vector_db_dir,
                 settings=Settings(allow_reset=True)
             )
-            # Initierar anslutningen till den lokala Ollama-instansen
+            # Initialize the client used to communicate with the locally
+            # hosted Ollama service for both generation and related AI tasks.
             self.ollama_client = ollama.Client(host=self.ollama_host)
         except Exception as e:
             logger.error(f"Kunde inte initiera databas eller Ollama-klient: {e}")
             raise
 
-        # Tillstånd för konversationsminne (buffer och summerad kontext)
+        # Maintain both recent raw exchanges and a compressed summary so
+        # conversational continuity can be preserved without continuously
+        # expanding the prompt and consuming unnecessary context or VRAM.
         self.chat_history: List[tuple] = []
         self.conversation_summary: str = ""
 
     def clear_memory(self):
         """
-        Nollställer sessionens minne och tömmer vektordatabasen helt.
-        Körs automatiskt vid varje ny dokumentuppladdning för att 
-        garantera att data inte läcker mellan olika dokument.
+        Reset the session's conversational state and completely clear its
+        vector database.
+
+        This is performed when a new document is uploaded so information
+        from a previous document cannot influence retrieval or subsequent
+        AI responses.
         """
         self.chat_history.clear()
         self.conversation_summary = ""
@@ -124,9 +136,11 @@ class PDFDocumentAssistant:
 
     def _summarize_memory(self) -> None:
         """
-        Minnesoptimering (Rolling Summary):
-        För att förhindra att kontextfönstret växer okontrollerat och slukar VRAM 
-        komprimeras äldre konversationer till en sammanfattning via AI-modellen.
+        Compress older conversation history into a rolling summary.
+
+        Keeping only the latest interaction in raw form while summarizing
+        older exchanges limits context growth and reduces the amount of
+        model memory required during continued conversations.
         """
         try:
             history_str = ""
@@ -153,7 +167,8 @@ Kort sammanfattning:"""
             )
             self.conversation_summary = response.get('response', '').strip()
 
-            # Sparar enbart det senaste interaktionsparet i råformat, resten bärs av sammanfattningen
+            # Retain only the most recent interaction in raw form because
+            # older exchanges are represented by the rolling summary.
             if self.chat_history:
                 last_pair = self.chat_history[-1]
                 self.chat_history = [last_pair]
@@ -164,11 +179,11 @@ Kort sammanfattning:"""
 
     def process_pdf(self, file_path: str) -> None:
         """
-        Inläsningspipeline för dokument (ETL-process):
-        1. Extraherar text från PDF via pdfplumber.
-        2. Validerar att dokumentet innehåller läsbar text (skydd mot tomma/skannade bild-PDF:er).
-        3. Delar upp texten i hanterbara segment (chunks) med överlappning.
-        4. Genererar embeddings och indexerar dem i ChromaDB.
+        Process and index a PDF through the document ingestion pipeline.
+
+        The pipeline extracts readable text, validates the document content,
+        splits the text into overlapping chunks, generates embeddings, and
+        stores the resulting vectors in the session's ChromaDB index.
         """
         try:
             try:
@@ -194,7 +209,9 @@ Kort sammanfattning:"""
                     embedding=OllamaEmbeddings(model=self.embedding_model, base_url=self.ollama_host)
                 )
             finally:
-                # Säkerhetsåtgärd: Rensa alltid bort den temporära filen från disk oavsett utfall
+                # Always remove the temporary uploaded file after processing,
+                # regardless of whether ingestion succeeds or fails, so the
+                # application does not accumulate unnecessary document copies.
                 if os.path.exists(file_path):
                     os.remove(file_path)
         except FileNotFoundError as e:
@@ -209,9 +226,12 @@ Kort sammanfattning:"""
 
     def query_rag(self, question: str) -> Dict[str, Any]:
         """
-        Synkron RAG-frågeställning:
-        Sök upp relevanta textdelar via semantisk likhet (Similarity Search),
-        konstruera prompten med historik och kontext, och returnera det slutgiltiga svaret.
+        Execute a synchronous RAG query.
+
+        Relevant document chunks are retrieved through semantic similarity
+        search, combined with the available conversational context, and
+        submitted to the language model to produce a grounded answer and
+        its corresponding source references.
         """
         try:
             if not self.vectorstore:
@@ -275,9 +295,12 @@ Kort sammanfattning:"""
 
     def stream_query_rag(self, question: str) -> Generator[str, None, None]:
         """
-        Asynkron Streaming RAG-pipeline (Server-Sent Events / SSE):
-        Optimerar upplevelsen genom att först extrahera och skicka källhänvisningar,
-        för att därefter strömma ut genererade tokens i realtid direkt från modellen.
+        Execute the RAG pipeline as a Server-Sent Events (SSE) stream.
+
+        Source metadata is sent to the client before model generation begins,
+        allowing the frontend to present document references immediately.
+        The generated answer is then streamed incrementally as tokens become
+        available, providing responsive feedback during longer AI requests.
         """
         try:
             if not self.vectorstore:
@@ -313,7 +336,9 @@ Kort sammanfattning:"""
 
             formatted_sources = [{"page": page, "content": content} for page, content in sources]
 
-            # Arkitektoniskt mönster: Skicka metadata (källor) till klienten först via SSE
+            # Architectural pattern: send source metadata to the client first
+            # through SSE so references are available before token generation
+            # begins and can be displayed independently of the final answer.
             yield f"data: {json.dumps({'type': 'sources', 'sources': formatted_sources})}\n\n"
 
             stream = self.ollama_client.generate(
