@@ -1,9 +1,9 @@
+# 📄 Smart PDF-Assistent
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local_AI-white?logo=ollama)](https://ollama.com/)
-
-# 📄 Smart PDF-Assistent
 
 En lokal AI-applikation för dokumentanalys med **RAG (Retrieval-Augmented Generation)**. Applikationen låter användaren ladda upp PDF-filer och ställa frågor om innehållet. AI-bearbetningen körs lokalt inom den egna infrastrukturen med hjälp av
 **Ollama**, medan backend och frontend hanterar dokument, sökningar och
